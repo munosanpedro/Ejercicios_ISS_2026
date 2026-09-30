@@ -11,6 +11,12 @@ void mostrar(const Personaje *p){
 
 
 }
+int limitar(int valor, int maximo, int minimo){
+if(valor < minimo) return minimo;
+if(valor > maximo) return maximo;
+return valor;
+
+}
 void recibir_damage(Personaje *p, int damage){
 p->vida = limitar(p->vida - damage, 0 , p->vida_max);
 }
@@ -22,7 +28,7 @@ printf("%d\n", (*p).vida);
 printf("%d\n", p->vida);
 printf("%p %p\n", (void*)p,(void*)&heroe);
 
-
+mostrar(&heroe);
 recibir_damage(&heroe, 30);
 mostrar(&heroe);
 return 0;
