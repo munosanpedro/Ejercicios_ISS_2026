@@ -14,7 +14,7 @@ void mostrar(const Personaje *p){
 int main(){
 Personaje heroe = {"Aria", 100, 100, 18, 5};
 Personaje *p = &heroe;
-printf("%d/n", heroe.vida);
+printf("%d\n", heroe.vida);
 printf("%d\n", (*p).vida);
 printf("%d\n", p->vida);
 printf("%p %p\n", (void*)p,(void*)&heroe);
