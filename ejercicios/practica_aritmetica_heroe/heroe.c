@@ -1,14 +1,12 @@
 #include<stdio.h>
-typedef{
+typedef struct{
 char nombre[30];
 int  vida;
 int vida_max;
 int ataque;
 int defensa;
-
-
 }Personaje;
-void mostrar(cost Personaje *p){
+void mostrar(const Personaje *p){
  printf("%s Vida: %d/%d Atq: %d Def:%d\n",p->nombre,p->vida,p->vidq_max,p->ataque,p->defensa);
 
 
