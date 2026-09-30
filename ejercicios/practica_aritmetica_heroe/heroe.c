@@ -11,6 +11,9 @@ void mostrar(const Personaje *p){
 
 
 }
+void recibir_damage(Personaje *p, int damage){
+p->vida = limitar(p->vida - damage, 0 , p->vida_max);
+}
 int main(){
 Personaje heroe = {"Aria", 100, 100, 18, 5};
 Personaje *p = &heroe;
@@ -19,6 +22,8 @@ printf("%d\n", (*p).vida);
 printf("%d\n", p->vida);
 printf("%p %p\n", (void*)p,(void*)&heroe);
 
+
+recibir_damage(&heroe, 30);
 mostrar(&heroe);
 return 0;
 
