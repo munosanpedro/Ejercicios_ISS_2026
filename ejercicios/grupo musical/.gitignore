@@ -1,0 +1,8 @@
+
+# Ignorar binarios y ejecutables de C
+manager_grupo_musical
+executablemanger
+ejecutablenosubir
+manager_grupo_musical
+*.exe
+*.o
