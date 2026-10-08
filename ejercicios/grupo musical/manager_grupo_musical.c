@@ -5,7 +5,24 @@ int popularidad;
 int energia;
 int energia_max;
 int fans;
+//mostrar jean
 
+
+
+
+
+
+
+//limitar un rango Oswaldo 
+
+
+
+
+
+
+
+
+//ensayar nikel
 
 
 }Idol;
