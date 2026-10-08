@@ -34,6 +34,21 @@ int limitar(int valor, int minimo, int maximo){
 
 
 
+
+//descansar oswaldo
+void descansar(idol *p, int horas){
+p->energia = limitar(p->energia + horas * 10, 0, p->energia_max);
+printf("%s descanso %d horas\n", p->nombre, horas);
+}
+
+
+
+
+
+
+
+
+
 int main(){
 Idol integrante1 = {"Jennie",100,100,100,100};
 Idol *p= &integrante1;
