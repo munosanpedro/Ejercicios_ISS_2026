@@ -16,7 +16,11 @@ printf(" nombre: %s \n Popularidad: %d \n Energia: %d\n Fans: %d\n", p->nombre, 
 
 
 //limitar un rango Oswaldo 
-
+int limitar(int valor, int minimo, int maximo){
+    if(valor < minimo) return minimo;
+    if(valor > maximo) return maximo;
+    return valor;
+}
 
 
 
