@@ -21,5 +21,6 @@ printf("%d\n", (*p).energia_max);
 printf("%d\n", (*p).fans);
 
 
+
 return 0;
 }
