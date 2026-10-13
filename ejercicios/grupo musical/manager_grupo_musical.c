@@ -27,8 +27,12 @@ int limitar(int valor, int minimo, int maximo){
 
 
 
-
-//ensayar nikel
+void ensayar(Idol *i){
+    if(i->energia >= 10){
+        i->popularidad += 10;
+        i->energia -= 10;
+        i->popularidad = limitar(i->popularidad, 0, 100);
+        i->energia = limitar(i->energia, 0, i->energia_max);
 
 
 
