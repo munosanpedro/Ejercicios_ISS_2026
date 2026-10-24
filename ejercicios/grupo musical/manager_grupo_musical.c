@@ -6,7 +6,7 @@ int energia;
 int energia_max;
 int fans;
 } Idol;
-//mostrar jean
+
 void mostrar (const Idol *p){
 
 printf(" nombre: %s \n Popularidad: %d \n Energia: %d\n Fans: %d\n", p->nombre, p->popularidad, p->energia, p->fans);
@@ -27,30 +27,33 @@ int limitar(int valor, int minimo, int maximo){
 
 
 
-void ensayar(Idol *i){
-    if(i->energia >= 10){
-        i->popularidad += 10;
-        i->energia -= 10;
-        i->popularidad = limitar(i->popularidad, 0, 100);
-        i->energia = limitar(i->energia, 0, i->energia_max);
+void ensayar(Idol *p){
+    if(p->energia >= 10){
+        p->popularidad += 10;
+        p->energia -= 10;
+        p->popularidad = limitar(p->popularidad, 0, 100);
+        p->energia = limitar(p->energia, 0, p->energia_max);
+}}
 
 
 
 
 
 
-//descansar oswaldo
-void descansar(idol *p, int horas){
-p->energia = limitar(p->energia + horas * 10, 0, p->energia_max);
-printf("%s descanso %d horas\n", p->nombre, horas);
+
+void descansar(Idol *p){
+p->energia+=10;
+p->energia= limitar(p->energia,0,p->energia_max);
 }
 
 
 
-
-
-
-
+void esta_activa(Idol *p){
+   if (p->energia>0){
+printf("Está activa");
+}else{
+printf("Está inactiva");
+}}
 
 
 int main(){
@@ -63,6 +66,12 @@ printf("%d\n", (*p).energia_max);
 printf("%d\n", (*p).fans);
 
 mostrar(&integrante1);
+for(int i=0; i<=20; i++){ensayar(&integrante1);}
+mostrar(&integrante1);
+esta_activa(&integrante1);
+for(int i=0; i<=20; i++){descansar(&integrante1);}
+mostrar(&integrante1);
+esta_activa(&integrante1);
 
 return 0;
 }
