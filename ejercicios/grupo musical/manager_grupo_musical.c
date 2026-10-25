@@ -48,30 +48,53 @@ p->energia= limitar(p->energia,0,p->energia_max);
 
 
 
-void esta_activa(Idol *p){
+void esta_activa(const Idol *p){
    if (p->energia>0){
-printf("Está activa");
+printf("Está activa\n");
 }else{
-printf("Está inactiva");
+printf("Está inactiva\n");
 }}
 
 
+int colaboracion(Idol *a, Idol *b){
+    if(a==NULL || b==NULL|| a == b){
+        return 0;
+    }else{
+       a->popularidad +=10; 
+       b->popularidad +=10;
+       a->energia -=15; 
+       b->energia -=15;
+       a->energia= limitar(a->energia,0,a->energia_max);
+       b->energia= limitar(b->energia,0,b->energia_max);
+       printf("%s colaboro con %s\n", a->nombre,b->nombre);
+       return 1;
+    }
+    
+    
+}
+
 int main(){
-Idol integrante1 = {"Jennie",100,100,100,100};
-Idol *p= &integrante1;
+Idol Jennie = {"Jennie",100,100,100,100};
+Idol Rose = {"Rose",100,100,100,100};
+Idol *p= &Jennie;
 printf("%s\n", (*p).nombre);
 printf("%d\n", (*p).popularidad);
 printf("%d\n", p->energia);
 printf("%d\n", (*p).energia_max);
 printf("%d\n", (*p).fans);
 
-mostrar(&integrante1);
-for(int i=0; i<=20; i++){ensayar(&integrante1);}
-mostrar(&integrante1);
-esta_activa(&integrante1);
-for(int i=0; i<=20; i++){descansar(&integrante1);}
-mostrar(&integrante1);
-esta_activa(&integrante1);
+mostrar(&Jennie);
+for(int i=0; i<=20; i++){ensayar(&Jennie);}
+mostrar(&Jennie);
+esta_activa(&Jennie);
+for(int i=0; i<=20; i++){descansar(&Jennie);}
+mostrar(&Jennie);
+esta_activa(&Jennie);
+mostrar(&Rose);
+colaboracion(&Jennie, &Jennie);
+colaboracion(NULL, &Rose);
+colaboracion(&Jennie, &Rose);
+mostrar(&Jennie),mostrar(&Rose);
 
 return 0;
 }
