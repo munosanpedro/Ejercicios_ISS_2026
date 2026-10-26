@@ -48,12 +48,15 @@ p->energia= limitar(p->energia,0,p->energia_max);
 
 
 
-void esta_activa(const Idol *p){
+int esta_activa(const Idol *p){
    if (p->energia>0){
 printf("Está activa\n");
+return 1;
 }else{
 printf("Está inactiva\n");
-}}
+return 0;
+ }
+}
 
 
 int colaboracion(Idol *a, Idol *b){
@@ -95,6 +98,36 @@ colaboracion(&Jennie, &Jennie);
 colaboracion(NULL, &Rose);
 colaboracion(&Jennie, &Rose);
 mostrar(&Jennie),mostrar(&Rose);
+
+Idol *turno= &Jennie;
+Idol *otra= &Rose;
+
+while(esta_activa(turno) && esta_activa(otra)&& turno->energia >= 10 && otra->energia >= 10){
+    printf("%s está ensayando\n", turno->nombre);
+    ensayar(turno);
+    Idol *tmp=turno;
+    turno=otra;
+    otra=tmp;
+}
+
+const Idol *ganador = esta_activa(turno) ? turno : otra;
+    printf("\n%s conserva energia\n", ganador->nombre);
+    printf("\n--- FIN DEL ENSAYO ---\n");
+
+if (Jennie.energia > 0 && Rose.energia == 0) {
+    printf("Jennie conserva energía\n");
+} else if (Rose.energia > 0 && Jennie.energia == 0) {
+    printf("Rose conserva energía\n");
+} else if (Jennie.energia > 0 && Rose.energia > 0) {
+    printf("Ambas conservan energía, pero una ya no puede ensayar\n");
+} else {
+    printf("Ninguna conserva energía\n");
+}
+
+mostrar(&Jennie);
+mostrar(&Rose);
+
+
 
 return 0;
 }
