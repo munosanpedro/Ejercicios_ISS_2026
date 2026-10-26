@@ -105,6 +105,17 @@ int popularidad_total(const Idol *i){
     return i->popularidad;
 }
 
+int cambiar_lider(Grupo *g, Idol *nueva) {
+    if (g == NULL || nueva == NULL) return 0;
+    for (int i = 0; i < g->n; i++) {
+        if (&(g->miembros[i]) == nueva) {
+            g->lider = nueva;
+            return 1;
+        }
+    }
+    return 0;
+}
+
 int main(){
     Cancion discos[2]={{"Starlight", 10, 3}, {"Nova", 5, 6}};
     Grupo lumina = {
@@ -116,6 +127,8 @@ int main(){
         },3,NULL
     };
     asignar_cancion(&lumina.miembros[0], &discos[0]);
+    
+    
     
 Idol Jennie = {"Jennie",100,100,100,100,NULL};
 Idol Rose = {"Rose",100,100,100,100,NULL};
@@ -177,5 +190,10 @@ printf("%s Cancion: %s\n", Rose.nombre, Rose.cancion->nombre);
 
 discos[0].vigencia = 0;
 printf("Popularidad total %s (cancion sin vigencia): %d\n",Jennie.nombre, popularidad_total(&Jennie));
+
+
+if (cambiar_lider(&lumina, &lumina.miembros[0])) {
+        printf("Lider asignado correctamente. Fans del lider: %d\n", lumina.lider->fans);
+    }
 return 0;
 }
