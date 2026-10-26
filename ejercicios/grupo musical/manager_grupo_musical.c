@@ -14,6 +14,13 @@ int fans;
 Cancion *cancion;
 } Idol;
 
+typedef struct {
+    char nombre[30];
+    Idol miembros[4];
+    int n;
+    Idol *lider;
+} Grupo;
+
 
 void mostrar (const Idol *p){
 
@@ -100,8 +107,15 @@ int popularidad_total(const Idol *i){
 
 int main(){
     Cancion discos[2]={{"Starlight", 10, 3}, {"Nova", 5, 6}};
-    
-    
+    Grupo lumina = {
+        "Lumina",
+        {
+            {"Luna", 80, 50, 100, 90, NULL},
+            {"Mina", 85, 20, 100, 95, NULL},
+            {"Nei", 100, 100, 100, 100, NULL}
+        },3,NULL
+    };
+    asignar_cancion(&lumina.miembros[0], &discos[0]);
     
 Idol Jennie = {"Jennie",100,100,100,100,NULL};
 Idol Rose = {"Rose",100,100,100,100,NULL};
