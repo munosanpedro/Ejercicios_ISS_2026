@@ -11,6 +11,7 @@ int popularidad;
 int energia;
 int energia_max;
 int fans;
+Cancion *cancion;
 } Idol;
 
 
@@ -22,7 +23,7 @@ printf(" nombre: %s \n Popularidad: %d \n Energia: %d\n Fans: %d\n", p->nombre, 
 
 
 
-//limitar un rango Oswaldo 
+
 int limitar(int valor, int minimo, int maximo){
     if(valor < minimo) return minimo;
     if(valor > maximo) return maximo;
@@ -79,8 +80,14 @@ int colaboracion(Idol *a, Idol *b){
        printf("%s colaboro con %s\n", a->nombre,b->nombre);
        return 1;
     }
-    
-    
+}
+
+void asignar_cancion(Idol *i, Cancion *c) {
+    if (i == NULL) {
+        return;
+    }
+
+    i->cancion = c;
 }
 
 int main(){
@@ -88,8 +95,9 @@ int main(){
     
     
     
-Idol Jennie = {"Jennie",100,100,100,100};
-Idol Rose = {"Rose",100,100,100,100};
+Idol Jennie = {"Jennie",100,100,100,100,NULL};
+Idol Rose = {"Rose",100,100,100,100,NULL};
+
 Idol *p= &Jennie;
 printf("%s\n", (*p).nombre);
 printf("%d\n", (*p).popularidad);
@@ -98,10 +106,10 @@ printf("%d\n", (*p).energia_max);
 printf("%d\n", (*p).fans);
 
 mostrar(&Jennie);
-for(int i=0; i<=20; i++){ensayar(&Jennie);}
+for(int i=1; i<=20; i++){ensayar(&Jennie);}
 mostrar(&Jennie);
 esta_activa(&Jennie);
-for(int i=0; i<=20; i++){descansar(&Jennie);}
+for(int i=1; i<=20; i++){descansar(&Jennie);}
 mostrar(&Jennie);
 esta_activa(&Jennie);
 mostrar(&Rose);
@@ -137,8 +145,11 @@ if (Jennie.energia > 0 && Rose.energia == 0) {
 
 mostrar(&Jennie);
 mostrar(&Rose);
-
-
-
+printf("%s Cancion: %s\n", Jennie.nombre, Jennie.cancion->nombre);
+printf("%s Cancion: %s\n", Rose.nombre, Rose.cancion->nombre);
+asignar_cancion(&Jennie, &discos[0]);
+asignar_cancion(&Rose, &discos[0]);
+printf("%s Cancion: %s\n", Jennie.nombre, Jennie.cancion->nombre);
+printf("%s Cancion: %s\n", Rose.nombre, Rose.cancion->nombre);
 return 0;
 }
