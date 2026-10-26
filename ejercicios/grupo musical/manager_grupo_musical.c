@@ -116,6 +116,30 @@ int cambiar_lider(Grupo *g, Idol *nueva) {
     return 0;
 }
 
+void mostrar_grupo(const Grupo *g) {
+    if (g == NULL) return;
+    printf("=== Grupo: %s ===\n", g->nombre);
+    Idol *p = (Idol *)g->miembros;
+    Idol *fin = g->miembros + g->n;
+    while (p < fin) {
+        mostrar(p);
+        p++;
+    }
+}
+
+int contar_activas(const Grupo *g) {
+    if (g == NULL || g->n == 0) return 0;
+    int count = 0;
+    Idol *p = g->miembros;
+    Idol *fin = g->miembros + g->n;
+    while (p < fin) {
+        if (esta_activa(p)) {
+            count++;
+        }
+        p++;
+    }
+    return count;
+}
 int main(){
     Cancion discos[2]={{"Starlight", 10, 3}, {"Nova", 5, 6}};
     Grupo lumina = {
@@ -195,5 +219,7 @@ printf("Popularidad total %s (cancion sin vigencia): %d\n",Jennie.nombre, popula
 if (cambiar_lider(&lumina, &lumina.miembros[0])) {
         printf("Lider asignado correctamente. Fans del lider: %d\n", lumina.lider->fans);
     }
+    mostrar_grupo(&lumina);
+    printf("Integrantes activas: %d\n", contar_activas(&lumina));
 return 0;
 }
