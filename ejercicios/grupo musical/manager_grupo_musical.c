@@ -90,6 +90,14 @@ void asignar_cancion(Idol *i, Cancion *c) {
     i->cancion = c;
 }
 
+int popularidad_total(const Idol *i){
+    if (i == NULL) return 0;
+    if (i->cancion != NULL && i->cancion->vigencia > 0) {
+        return i->popularidad + i->cancion->bonus;
+    }
+    return i->popularidad;
+}
+
 int main(){
     Cancion discos[2]={{"Starlight", 10, 3}, {"Nova", 5, 6}};
     
@@ -151,5 +159,9 @@ asignar_cancion(&Jennie, &discos[0]);
 asignar_cancion(&Rose, &discos[0]);
 printf("%s Cancion: %s\n", Jennie.nombre, Jennie.cancion->nombre);
 printf("%s Cancion: %s\n", Rose.nombre, Rose.cancion->nombre);
+
+
+discos[0].vigencia = 0;
+printf("Popularidad total %s (cancion sin vigencia): %d\n",Jennie.nombre, popularidad_total(&Jennie));
 return 0;
 }
