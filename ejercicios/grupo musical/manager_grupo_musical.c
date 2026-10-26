@@ -140,6 +140,21 @@ int contar_activas(const Grupo *g) {
     }
     return count;
 }
+
+Idol *idol_mas_cansada(Grupo *g) {
+    if (g == NULL || g->n == 0) return NULL;
+    Idol *mas_cansada = &(g->miembros[0]);
+    Idol *p = g->miembros + 1;
+    Idol *fin = g->miembros + g->n;
+    while (p < fin) {
+        if (p->energia < mas_cansada->energia) {
+            mas_cansada = p;
+        }
+        p++;
+    }
+    return mas_cansada;
+}
+
 int main(){
     Cancion discos[2]={{"Starlight", 10, 3}, {"Nova", 5, 6}};
     Grupo lumina = {
@@ -221,5 +236,13 @@ if (cambiar_lider(&lumina, &lumina.miembros[0])) {
     }
     mostrar_grupo(&lumina);
     printf("Integrantes activas: %d\n", contar_activas(&lumina));
+
+
+Idol *cansada = idol_mas_cansada(&lumina);
+    if (cansada != NULL) {
+        printf("Integrante mas cansada: %s (Energia: %d)\n", cansada->nombre, cansada->energia);
+        descansar(cansada);
+        printf("Energia tras descansar: %d\n", cansada->energia);
+    }
 return 0;
 }
