@@ -1,11 +1,18 @@
 #include <stdio.h>
 typedef struct{
 char nombre[30];
+int bonus;
+int vigencia;
+} Cancion;
+
+typedef struct{
+char nombre[30];
 int popularidad;
 int energia;
 int energia_max;
 int fans;
 } Idol;
+
 
 void mostrar (const Idol *p){
 
@@ -77,6 +84,10 @@ int colaboracion(Idol *a, Idol *b){
 }
 
 int main(){
+    Cancion discos[2]={{"Starlight", 10, 3}, {"Nova", 5, 6}};
+    
+    
+    
 Idol Jennie = {"Jennie",100,100,100,100};
 Idol Rose = {"Rose",100,100,100,100};
 Idol *p= &Jennie;
