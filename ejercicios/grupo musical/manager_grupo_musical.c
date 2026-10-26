@@ -133,7 +133,7 @@ int contar_activas(const Grupo *g) {
     Idol *p = g->miembros;
     Idol *fin = g->miembros + g->n;
     while (p < fin) {
-        if (esta_activa(p)) {
+        if (p->energia > 0) {
             count++;
         }
         p++;
@@ -155,6 +155,50 @@ Idol *idol_mas_cansada(Grupo *g) {
     return mas_cansada;
 }
 
+void dar_concierto(Grupo *g) {
+    if (g == NULL) return;
+    printf("\n--- ¡INICIO DE CONCIERTO PARA EL GRUPO %s! ---\n", g->nombre);
+    Idol *p = g->miembros;
+    Idol *fin = g->miembros + g->n;
+    while (p < fin) {
+        if (p->energia > 0) {
+            int pop_tot = popularidad_total(p);
+            int fans_ganados = pop_tot * 10;
+            p->fans += fans_ganados;
+            p->energia -= 20;
+            p->energia = limitar(p->energia, 0, p->energia_max);
+            
+            printf("- %s participo en el concierto, gano %d fans y su energia actual es %d.\n", p->nombre, fans_ganados, p->energia);
+            if (p->cancion != NULL) {
+                if (p->cancion->vigencia > 0) {
+                    p->cancion->vigencia--;
+                    if (p->cancion->vigencia == 0) {
+                        printf("  -> ¡La cancion '%s' ya no esta vigente!\n", p->cancion->nombre);
+                    }
+                }
+            }
+        }
+        p++;
+    }
+    printf("--- FIN DEL CONCIERTO ---\n\n");
+}
+
+void mostrar_cancion_lider(const Grupo *g) {
+    if (g == NULL) {
+        printf("Error: El grupo no existe (es NULL).\n");
+        return;
+    }
+    if (g->lider == NULL) {
+        printf("El grupo '%s' no tiene una lider asignada actualmente.\n", g->nombre);
+        return;
+    }
+    if (g->lider->cancion == NULL) {
+        printf("La lider '%s' no tiene ninguna cancion asignada.\n", g->lider->nombre);
+        return;
+    }
+    printf("La lider '%s' interpreta la cancion: %s\n", g->lider->nombre, g->lider->cancion->nombre);
+}
+
 int main(){
     Cancion discos[2]={{"Starlight", 10, 3}, {"Nova", 5, 6}};
     Grupo lumina = {
@@ -166,6 +210,7 @@ int main(){
         },3,NULL
     };
     asignar_cancion(&lumina.miembros[0], &discos[0]);
+    asignar_cancion(&lumina.miembros[2], &discos[0]);
     
     
     
@@ -244,5 +289,18 @@ Idol *cansada = idol_mas_cansada(&lumina);
         descansar(cansada);
         printf("Energia tras descansar: %d\n", cansada->energia);
     }
+    
+Grupo grupo_sin_lider = {"Ghost", {{"A", 50, 50, 100, 10, NULL}}, 1, NULL};
+mostrar_cancion_lider(&grupo_sin_lider);
+
+cambiar_lider(&lumina, &lumina.miembros[1]); // Jisoo es la líder
+lumina.lider->cancion = NULL;
+mostrar_cancion_lider(&lumina);
+cambiar_lider(&lumina, &lumina.miembros[0]); // Luna es la líder
+asignar_cancion(lumina.lider, &discos[0]);
+discos[0].vigencia = 3; // Restauramos temporalmente para una pruebita
+mostrar_cancion_lider(&lumina);
+dar_concierto(&lumina);
+dar_concierto(&lumina);
 return 0;
 }
