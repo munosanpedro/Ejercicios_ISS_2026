@@ -21,7 +21,7 @@ typedef struct{
 int idObjeto;
 int idEspecie;
 int Permitido;
-] Regla;
+} Regla;
 typedef struct{
 char mombre[30];
 int id;
