@@ -42,30 +42,6 @@ int hora;
 Viajero *viajero;
 Objeto *objeto;
 } Incidente;
-typedef struct{
-    int idObjeto;
-    int idEspecie;
-    int permitido;
-} Regla;
-typedef struct{
-    char nombre[30];
-    int id;
-    Especie *especie;
-    Planeta *planeta;
-    Objeto **equipaje;
-    int numObjetos;
-    int capacidad;
-    int puntajeRiesgo;
-    int decicion;
-} Viajero;
-typedef struct{
-    char decision[50];
-    int id;
-    int fecha;
-    int hora;
-    Viajero *viajero;
-    Objeto *objeto;
-} Incidente;
 
 typedef struct{
     Especie *especies;
