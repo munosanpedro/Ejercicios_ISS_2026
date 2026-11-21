@@ -18,7 +18,6 @@ typedef struct{
     int nvPeligro;
     int idContrabando;
 } Objeto;
-<<<<<<< HEAD
 typedef struct{
 int idObjeto;
 int idEspecie;
@@ -43,8 +42,7 @@ int hora;
 Viajero *viajero;
 Objeto *objeto;
 } Incidente;
-=======
-    typedef struct{
+typedef struct{
     int idObjeto;
     int idEspecie;
     int permitido;
@@ -89,8 +87,6 @@ typedef struct{
     int cantIncidentes;
     int capIncidentes;
 } Aduana;
->>>>>>> e3753e4d5164a87f2181c496a618e1be20579ad2
-
 int crearAduana(Aduana *j, int capInicial){
     if(j == NULL || capInicial <= 0){
     return 0;
