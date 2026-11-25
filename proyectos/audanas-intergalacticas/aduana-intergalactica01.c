@@ -63,6 +63,58 @@ typedef struct{
     int cantIncidentes;
     int capIncidentes;
 } Aduana;
+int crecerArreglo(void **arreglo, int *capacidad, size_t tamElemento){
+    int nuevaCapacidad=(*capacidad)*2;
+    void *temporal=realloc(*arreglo,(size_t)nuevaCapacidad*tamElemento);
+    if(temporal==NULL){
+        return 0;
+    }
+    *arreglo=temporal;
+    *capacidad=nuevaCapacidad;
+    return 1;
+}
+Viajero *crearViajero(int capacidadInicial){
+
+    if(capacidadInicial <= 0){
+        return NULL;
+    }
+
+    Viajero *nuevo = malloc(sizeof(Viajero));
+
+    if(nuevo == NULL){
+        return NULL;
+    }
+
+    nuevo->equipaje = malloc(
+        (size_t)capacidadInicial * sizeof(Objeto*)
+    );
+
+    if(nuevo->equipaje == NULL){
+        free(nuevo);
+        return NULL;
+    }
+
+    nuevo->numObjetos = 0;
+    nuevo->capacidad = capacidadInicial;
+    nuevo->puntajeRiesgo = 0;
+    nuevo->desicion = 0;
+
+    nuevo->especie = NULL;
+    nuevo->planeta = NULL;
+
+    return nuevo;
+}
+void liberarViajero(Viajero *v){
+
+    if(v == NULL){
+        return;
+    }
+
+    free(v->equipaje);
+    v->equipaje = NULL;
+
+    free(v);
+}
 int crearAduana(Aduana *j, int capInicial){
     if(j == NULL || capInicial <= 0){
     return 0;
@@ -122,7 +174,70 @@ void liberarAduana(Aduana *j){
     j->viajeros=NULL;
     j->incidentes=NULL;
 }
+int agregarObjetoEquipaje(Viajero *v, Objeto *obj){
 
+    if(v == NULL || obj == NULL){
+        return 0;
+    }
+
+    if(v->numObjetos == v->capacidad){
+
+        if(!crecerArreglo((void**)&v->equipaje,
+                          &v->capacidad,
+                          sizeof(Objeto*))){
+
+            return 0;
+        }
+    }
+
+    v->equipaje[v->numObjetos] = obj;
+
+    v->numObjetos++;
+
+    return 1;
+}
+int quitarObjetoEquipaje(Viajero *v, int idObjeto){
+
+    if(v == NULL || v->equipaje == NULL){
+        return 0;
+    }
+
+    int posicion = -1;
+    for(int i = 0; i < v->numObjetos; i++){
+
+        if(v->equipaje[i]->id == idObjeto){
+            posicion = i;
+            break;
+        }
+    }
+    if(posicion == -1){
+        return 0;
+    }
+    for(int i = posicion; i < v->numObjetos - 1; i++){
+
+        v->equipaje[i] = v->equipaje[i + 1];
+    }
+
+    v->numObjetos--;
+    if(v->capacidad > 2 &&
+       v->numObjetos <= v->capacidad / 2){
+
+        int nuevaCapacidad = v->capacidad / 2;
+
+        Objeto **temporal = realloc(
+            v->equipaje,
+            (size_t)nuevaCapacidad * sizeof(Objeto*)
+        );
+
+        if(temporal != NULL){
+
+            v->equipaje = temporal;
+            v->capacidad = nuevaCapacidad;
+        }
+    }
+
+    return 1;
+}
 int main(){
 Aduana unoAduana;
 
@@ -146,6 +261,66 @@ printf("Reglas registradas: %d\n", unoAduana.cantRegla);
 printf("Viajeros registrados: %d\n", unoAduana.cantViajeros);
 printf("Incidentes registrados: %d\n", unoAduana.cantIncidentes);
     liberarAduana(&unoAduana);
-    
+    Viajero *viajero = crearViajero(2);
+
+    if(viajero == NULL){
+        printf("Error al crear viajero\n");
+        return 1;
+    }
+
+    printf("Viajero creado correctamente\n");
+    printf("Objetos: %d\n", viajero->numObjetos);
+    printf("Capacidad: %d\n", viajero->capacidad);
+    Objeto objeto1 = {"Laser", 1, 5, 100};
+    Objeto objeto2 = {"Espada", 2, 3, 101};
+    Objeto objeto3 = {"Escudo", 3, 2, 102};
+
+    agregarObjetoEquipaje(viajero, &objeto1);
+    agregarObjetoEquipaje(viajero, &objeto2);
+
+    printf("=== EQUIPAJE ===\n");
+
+    for(int i = 0; i < viajero->numObjetos; i++){
+        printf("%s\n", viajero->equipaje[i]->nombre);
+    }
+
+    printf("\nAgregando tercer objeto...\n");
+
+    if(agregarObjetoEquipaje(viajero, &objeto3)){
+        printf("Objeto agregado correctamente\n");
+    }
+
+    printf("\n=== EQUIPAJE ACTUALIZADO ===\n");
+
+    for(int i = 0; i < viajero->numObjetos; i++){
+        printf("%s\n", viajero->equipaje[i]->nombre);
+    }
+
+    printf("\nObjetos: %d\n", viajero->numObjetos);
+    printf("Capacidad: %d\n", viajero->capacidad);
+    printf("=== EQUIPAJE ORIGINAL ===\n");
+
+for(int i = 0; i < viajero->numObjetos; i++){
+    printf("%s\n", viajero->equipaje[i]->nombre);
+}
+
+if(quitarObjetoEquipaje(viajero, 2)){
+    printf("\nObjeto eliminado correctamente\n");
+}
+
+printf("\n=== EQUIPAJE ACTUALIZADO ===\n");
+
+for(int i = 0; i < viajero->numObjetos; i++){
+    printf("%s\n", viajero->equipaje[i]->nombre);
+}
+
+printf("\nObjetos: %d\n", viajero->numObjetos);
+printf("Capacidad: %d\n", viajero->capacidad);
+
+    liberarViajero(viajero);
+
+    printf("Memoria liberada correctamente\n");
+
+    return 0;
 return 0;
 }
