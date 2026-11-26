@@ -1,0 +1,4 @@
+1|Humano|5
+2|Zorgoniano|25
+3|Cronosiano|15
+4|Etereo|10

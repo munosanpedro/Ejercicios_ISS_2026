@@ -1,0 +1,5 @@
+1|Agujero negro|50|1
+2|Mascota invisible|25|0
+3|Recuerdos falsos|35|1
+4|Traductor universal|5|0
+5|Cristal de energia|40|0

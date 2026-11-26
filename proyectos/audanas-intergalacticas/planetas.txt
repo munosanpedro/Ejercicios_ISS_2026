@@ -1,0 +1,4 @@
+1|Tierra|5
+2|Nebulosa X|30
+3|Chronos Prime|15
+4|Vacio Cuantico|20
