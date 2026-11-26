@@ -1739,80 +1739,177 @@ void cargarTodo(Aduana *a) {
     cargarViajeros(a);
     cargarIncidentes(a);
 }
+void mostrarMenu(void) {
+    printf("\n=== SISTEMA DE ADUANA INTERGALACTICA ===\n");
+    printf("1) Registro\n");
+    printf("2) Consultas y listados\n");
+    printf("3) Modificar\n");
+    printf("4) Eliminar\n");
+    printf("5) Evaluar viajero\n");
+    printf("6) Reportes e incidentes\n");
+    printf("7) Guardar datos ahora\n");
+    printf("0) Guardar y salir\n");
+}
+
+void menuRegistro(Aduana *a) {
+    if (a == NULL) return;
+
+    int op = -1;
+    do {
+        printf("\n--- MENU REGISTRO ---\n");
+        printf("1) Registrar especie\n");
+        printf("2) Registrar planeta\n");
+        printf("3) Registrar objeto\n");
+        printf("4) Registrar regla\n");
+        printf("5) Registrar viajero\n");
+        printf("0) Volver\n");
+        op = leerEntero("Opcion: ", 0, 5);
+
+        switch (op) {
+            case 1: registrarEspecie(a); break;
+            case 2: registrarPlaneta(a); break;
+            case 3: registrarObjeto(a); break;
+            case 4: registrarRegla(a); break;
+            case 5: registrarViajero(a); break;
+            case 0: break;
+        }
+    } while (op != 0);
+}
+
+void menuConsultas(Aduana *a) {
+    if (a == NULL) return;
+
+    int op = -1;
+    do {
+        printf("\n--- MENU CONSULTAS ---\n");
+        printf("1) Listar especies\n");
+        printf("2) Listar planetas\n");
+        printf("3) Listar objetos\n");
+        printf("4) Listar viajeros\n");
+        printf("5) Buscar viajero por ID\n");
+        printf("0) Volver\n");
+        op = leerEntero("Opcion: ", 0, 5);
+
+        if (op == 1) {
+            listarEspecies(a);
+        } else if (op == 2) {
+            listarPlanetas(a);
+        } else if (op == 3) {
+            listarObjetos(a);
+        } else if (op == 4) {
+            listarViajeros(a);
+        } else if (op == 5) {
+            int id = leerEntero("ID de viajero: ", 1, 100000);
+            Viajero *v = buscarViajero(a, id, NULL);
+            if (v != NULL) {
+                printf("Encontrado: %s (ID %d) | Riesgo: %d | Decision: %d\n",
+                       v->nombre, v->id, v->puntajeRiesgo, v->desicion);
+            } else {
+                printf("Viajero no encontrado.\n");
+            }
+        }
+    } while (op != 0);
+}
+
+void menuModificar(Aduana *a) {
+    if (a == NULL) return;
+
+    int op = -1;
+    do {
+        printf("\n--- MENU MODIFICAR ---\n");
+        printf("1) Modificar especie\n");
+        printf("2) Modificar objeto\n");
+        printf("3) Modificar viajero\n");
+        printf("0) Volver\n");
+        op = leerEntero("Opcion: ", 0, 3);
+
+        switch (op) {
+            case 1: modificarEspecie(a); break;
+            case 2: modificarObjeto(a); break;
+            case 3: modificarViajero(a); break;
+            case 0: break;
+        }
+    } while (op != 0);
+}
+
+void menuEliminar(Aduana *a) {
+    if (a == NULL) return;
+
+    int op = -1;
+    do {
+        printf("\n--- MENU ELIMINAR ---\n");
+        printf("1) Eliminar especie\n");
+        printf("2) Eliminar objeto\n");
+        printf("3) Eliminar viajero\n");
+        printf("0) Volver\n");
+        op = leerEntero("Opcion: ", 0, 3);
+
+        switch (op) {
+            case 1: eliminarEspecie(a); break;
+            case 2: eliminarObjeto(a); break;
+            case 3: eliminarViajero(a); break;
+            case 0: break;
+        }
+    } while (op != 0);
+}
+
+void menuReportes(const Aduana *a) {
+    if (a == NULL) return;
+
+    int op = -1;
+    do {
+        printf("\n--- MENU REPORTES ---\n");
+        printf("1) Listar incidentes\n");
+        printf("2) Reporte por viajero\n");
+        printf("3) Reporte general\n");
+        printf("4) Exportar reporte a .txt\n");
+        printf("0) Volver\n");
+        op = leerEntero("Opcion: ", 0, 4);
+
+        switch (op) {
+            case 1: listarIncidentes(a); break;
+            case 2: reporteViajero(a); break;
+            case 3: reporteGeneral(a); break;
+            case 4: exportarReporte(a); break;
+            case 0: break;
+        }
+    } while (op != 0);
+}
 
 int main(void) {
-    Aduana unoAduana;
+    Aduana aduana;
 
-    if (!crearAduana(&unoAduana, 2)) {
-        printf("Error al crear aduana\n");
+    if (!crearAduana(&aduana, 2)) {
+        printf("Error al inicializar la aduana.\n");
         return 1;
     }
 
-    printf("=== ADUANA ===\n");
-    printf("Especies: %d\n", unoAduana.capEspecies);
-    printf("Planetas: %d\n", unoAduana.capPlanetas);
-    printf("Objetos: %d\n", unoAduana.capObjetos);
-    printf("Reglas: %d\n", unoAduana.capRegla);
-    printf("Viajeros: %d\n", unoAduana.capViajeros);
-    printf("Incidentes: %d\n", unoAduana.capIncidentes);
-    printf("\n=== CONTADORES ===\n");
-    printf("Especies registradas: %d\n", unoAduana.cantEspecies);
-    printf("Planetas registrados: %d\n", unoAduana.cantPlanetas);
-    printf("Objetos registrados: %d\n", unoAduana.cantObjetos);
-    printf("Reglas registradas: %d\n", unoAduana.cantRegla);
-    printf("Viajeros registrados: %d\n", unoAduana.cantViajeros);
-    printf("Incidentes registrados: %d\n", unoAduana.cantIncidentes);
-    liberarAduana(&unoAduana);
+    cargarTodo(&aduana);
+    printf("\n");
+    printf("============================================================\n");
+    printf("          Bienvenido al SISTEMA DE ADUANAS INTERGALACTICAS\n");
+    printf("============================================================\n");
+    printf("\n");
+    int opcion = -1;
+    do {
+        mostrarMenu();
+        opcion = leerEntero("Seleccione una opcion: ", 0, 7);
 
-    Viajero *viajero = crearViajero(2);
-    if (viajero == NULL) {
-        printf("Error al crear viajero\n");
-        return 1;
-    }
+        switch (opcion) {
+            case 1: menuRegistro(&aduana); break;
+            case 2: menuConsultas(&aduana); break;
+            case 3: menuModificar(&aduana); break;
+            case 4: menuEliminar(&aduana); break;
+            case 5: evaluarViajero(&aduana); break;
+            case 6: menuReportes(&aduana); break;
+            case 7: guardarTodo(&aduana); break;
+            case 0:
+                guardarTodo(&aduana);
+                printf("Saliendo del sistema...\n");
+                break;
+        }
+    } while (opcion != 0);
 
-    printf("Viajero creado correctamente\n");
-    printf("Objetos: %d\n", viajero->numObjetos);
-    printf("Capacidad: %d\n", viajero->capacidad);
-
-    Objeto objeto1 = {"Laser", 1, 5, 100};
-    Objeto objeto2 = {"Espada", 2, 3, 101};
-    Objeto objeto3 = {"Escudo", 3, 2, 102};
-
-    agregarObjetoEquipaje(viajero, &objeto1);
-    agregarObjetoEquipaje(viajero, &objeto2);
-
-    printf("=== EQUIPAJE ===\n");
-    for (int i = 0; i < viajero->numObjetos; i++) {
-        printf("%s\n", viajero->equipaje[i]->nombre);
-    }
-
-    printf("\nAgregando tercer objeto...\n");
-    if (agregarObjetoEquipaje(viajero, &objeto3)) {
-        printf("Objeto agregado correctamente\n");
-    }
-
-    printf("\n=== EQUIPAJE ACTUALIZADO ===\n");
-    for (int i = 0; i < viajero->numObjetos; i++) {
-        printf("%s\n", viajero->equipaje[i]->nombre);
-    }
-
-    printf("\nObjetos: %d\n", viajero->numObjetos);
-    printf("Capacidad: %d\n", viajero->capacidad);
-
-    if (quitarObjetoEquipaje(viajero, 2)) {
-        printf("\nObjeto eliminado correctamente\n");
-    }
-
-    printf("\n=== EQUIPAJE ACTUALIZADO ===\n");
-    for (int i = 0; i < viajero->numObjetos; i++) {
-        printf("%s\n", viajero->equipaje[i]->nombre);
-    }
-
-    printf("\nObjetos: %d\n", viajero->numObjetos);
-    printf("Capacidad: %d\n", viajero->capacidad);
-
-    liberarViajero(viajero);
-    printf("Memoria liberada correctamente\n");
-
+    liberarAduana(&aduana);
     return 0;
 }
