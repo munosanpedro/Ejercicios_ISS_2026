@@ -658,6 +658,392 @@ int registrarViajero(Aduana *a) {
     printf("Viajero registrado correctamente.\n");
     return 1;
 }
+Especie *buscarEspecie(Aduana *a, int id, const char *nombre) {
+    if (a == NULL || a->especies == NULL) {
+        return NULL;
+    }
+
+    Especie *fin = a->especies + a->cantEspecies;
+    for (Especie *p = a->especies; p < fin; p++) {
+        if (id > 0 && p->id == id) {
+            return p;
+        }
+        if (nombre != NULL && nombre[0] != '\0' && strcmp(p->nombre, nombre) == 0) {
+            return p;
+        }
+    }
+    return NULL;
+}
+
+Planeta *buscarPlaneta(Aduana *a, int id, const char *nombre) {
+    if (a == NULL || a->planetas == NULL) {
+        return NULL;
+    }
+
+    Planeta *fin = a->planetas + a->cantPlanetas;
+    for (Planeta *p = a->planetas; p < fin; p++) {
+        if (id > 0 && p->id == id) {
+            return p;
+        }
+        if (nombre != NULL && nombre[0] != '\0' && strcmp(p->nombre, nombre) == 0) {
+            return p;
+        }
+    }
+    return NULL;
+}
+
+Objeto *buscarObjeto(Aduana *a, int id, const char *nombre) {
+    if (a == NULL || a->objetos == NULL) {
+        return NULL;
+    }
+
+    Objeto *fin = a->objetos + a->cantObjetos;
+    for (Objeto *p = a->objetos; p < fin; p++) {
+        if (id > 0 && p->id == id) {
+            return p;
+        }
+        if (nombre != NULL && nombre[0] != '\0' && strcmp(p->nombre, nombre) == 0) {
+            return p;
+        }
+    }
+    return NULL;
+}
+
+Viajero *buscarViajero(Aduana *a, int id, const char *nombre) {
+    if (a == NULL || a->viajeros == NULL) {
+        return NULL;
+    }
+
+    Viajero *fin = a->viajeros + a->cantViajeros;
+    for (Viajero *p = a->viajeros; p < fin; p++) {
+        if (id > 0 && p->id == id) {
+            return p;
+        }
+        if (nombre != NULL && nombre[0] != '\0' && strcmp(p->nombre, nombre) == 0) {
+            return p;
+        }
+    }
+    return NULL;
+}
+
+void listarEspecies(const Aduana *a) {
+    if (a == NULL || a->cantEspecies == 0) {
+        printf("No hay especies registradas.\n");
+        return;
+    }
+
+    printf("\n=== ESPECIES ===\n");
+    const Especie *fin = a->especies + a->cantEspecies;
+    for (const Especie *p = a->especies; p < fin; p++) {
+        printf("ID: %d | Nombre: %s | Peligro base: %d\n", p->id, p->nombre, p->nvPeligro);
+    }
+}
+
+void listarPlanetas(const Aduana *a) {
+    if (a == NULL || a->cantPlanetas == 0) {
+        printf("No hay planetas registrados.\n");
+        return;
+    }
+
+    printf("\n=== PLANETAS ===\n");
+    const Planeta *fin = a->planetas + a->cantPlanetas;
+    for (const Planeta *p = a->planetas; p < fin; p++) {
+        printf("ID: %d | Nombre: %s | Riesgo: %d\n", p->id, p->nombre, p->nvRiesgo);
+    }
+}
+
+void listarObjetos(const Aduana *a) {
+    if (a == NULL || a->cantObjetos == 0) {
+        printf("No hay objetos registrados.\n");
+        return;
+    }
+
+    printf("\n=== OBJETOS ===\n");
+    const Objeto *fin = a->objetos + a->cantObjetos;
+    for (const Objeto *p = a->objetos; p < fin; p++) {
+        printf("ID: %d | Nombre: %s | Peligro: %d | Contrabando: %s\n",
+               p->id, p->nombre, p->nvPeligro, p->idContrabando ? "Si" : "No");
+    }
+}
+
+void listarViajeros(const Aduana *a) {
+    if (a == NULL || a->cantViajeros == 0) {
+        printf("No hay viajeros registrados.\n");
+        return;
+    }
+
+    printf("\n=== VIAJEROS ===\n");
+    const Viajero *fin = a->viajeros + a->cantViajeros;
+    for (const Viajero *p = a->viajeros; p < fin; p++) {
+        const char *nomEsp = (p->especie != NULL) ? p->especie->nombre : "Sin especie";
+        const char *nomPla = (p->planeta != NULL) ? p->planeta->nombre : "Sin planeta";
+        printf("ID: %d | Nombre: %s | Especie: %s | Planeta: %s | Objetos: %d | Riesgo: %d | Decision: %d\n",
+               p->id, p->nombre, nomEsp, nomPla, p->numObjetos, p->puntajeRiesgo, p->desicion);
+    }
+}
+
+int modificarEspecie(Aduana *a) {
+    if (a == NULL || a->cantEspecies == 0) {
+        printf("No hay especies para modificar.\n");
+        return 0;
+    }
+
+    int id = leerEntero("ID de especie a modificar: ", 1, 100000);
+    Especie *esp = buscarEspecie(a, id, NULL);
+    if (esp == NULL) {
+        printf("Especie no encontrada.\n");
+        return 0;
+    }
+
+    char nuevoNombre[MAX_NOMBRE];
+    do {
+        leerCadena("Nuevo nombre de especie: ", nuevoNombre, MAX_NOMBRE);
+        if (!validarNombre(nuevoNombre)) {
+            printf("Nombre invalido.\n");
+        }
+    } while (!validarNombre(nuevoNombre));
+
+    int nuevoPeligro = leerEntero("Nuevo nivel de peligro base (0-100): ", 0, 100);
+
+    strcpy(esp->nombre, nuevoNombre);
+    esp->nvPeligro = nuevoPeligro;
+    printf("Especie modificada correctamente.\n");
+    return 1;
+}
+
+int modificarObjeto(Aduana *a) {
+    if (a == NULL || a->cantObjetos == 0) {
+        printf("No hay objetos para modificar.\n");
+        return 0;
+    }
+
+    int id = leerEntero("ID de objeto a modificar: ", 1, 100000);
+    Objeto *obj = buscarObjeto(a, id, NULL);
+    if (obj == NULL) {
+        printf("Objeto no encontrado.\n");
+        return 0;
+    }
+
+    char nuevoNombre[MAX_NOMBRE_CORTO];
+    do {
+        leerCadena("Nuevo nombre de objeto: ", nuevoNombre, MAX_NOMBRE_CORTO);
+        if (!validarNombre(nuevoNombre)) {
+            printf("Nombre invalido.\n");
+        }
+    } while (!validarNombre(nuevoNombre));
+
+    int nuevoPeligro = leerEntero("Nuevo nivel de peligro (0-100): ", 0, 100);
+    int nuevoContra = leerEntero("Es contrabando? (1 = Si, 0 = No): ", 0, 1);
+
+    strcpy(obj->nombre, nuevoNombre);
+    obj->nvPeligro = nuevoPeligro;
+    obj->idContrabando = nuevoContra;
+    printf("Objeto modificado correctamente.\n");
+    return 1;
+}
+
+int modificarViajero(Aduana *a) {
+    if (a == NULL || a->cantViajeros == 0) {
+        printf("No hay viajeros para modificar.\n");
+        return 0;
+    }
+
+    int id = leerEntero("ID de viajero a modificar: ", 1, 100000);
+    Viajero *v = buscarViajero(a, id, NULL);
+    if (v == NULL) {
+        printf("Viajero no encontrado.\n");
+        return 0;
+    }
+
+    char nuevoNombre[30];
+    do {
+        leerCadena("Nuevo nombre del viajero: ", nuevoNombre, sizeof(nuevoNombre));
+        if (!validarNombre(nuevoNombre)) {
+            printf("Nombre invalido.\n");
+        }
+    } while (!validarNombre(nuevoNombre));
+    strcpy(v->nombre, nuevoNombre);
+
+    if (confirmarAccion("Desea cambiar especie y planeta?")) {
+        int idEsp = leerEntero("Nuevo ID de especie: ", 1, 100000);
+        Especie *esp = buscarEspecie(a, idEsp, NULL);
+        if (esp != NULL) {
+            v->especie = esp;
+        } else {
+            printf("Especie no encontrada; se mantiene la anterior.\n");
+        }
+
+        int idPla = leerEntero("Nuevo ID de planeta: ", 1, 100000);
+        Planeta *pla = buscarPlaneta(a, idPla, NULL);
+        if (pla != NULL) {
+            v->planeta = pla;
+        } else {
+            printf("Planeta no encontrado; se mantiene el anterior.\n");
+        }
+    }
+
+    if (confirmarAccion("Desea editar el equipaje del viajero?")) {
+        int op = leerEntero("1) Agregar objeto  2) Quitar objeto  0) Nada: ", 0, 2);
+        if (op == 1) {
+            int idObj = leerEntero("ID del objeto a agregar: ", 1, 100000);
+            Objeto *obj = buscarObjeto(a, idObj, NULL);
+            if (obj != NULL && agregarObjetoEquipaje(v, obj)) {
+                printf("Objeto agregado al equipaje.\n");
+            } else {
+                printf("No se pudo agregar el objeto.\n");
+            }
+        } else if (op == 2) {
+            int idObj = leerEntero("ID del objeto a quitar: ", 1, 100000);
+            if (quitarObjetoEquipaje(v, idObj)) {
+                printf("Objeto quitado del equipaje.\n");
+            } else {
+                printf("El objeto no estaba en el equipaje.\n");
+            }
+        }
+    }
+
+    printf("Viajero actualizado.\n");
+    return 1;
+}
+
+int eliminarEspecie(Aduana *a) {
+    if (a == NULL || a->cantEspecies == 0) {
+        printf("No hay especies para eliminar.\n");
+        return 0;
+    }
+
+    int id = leerEntero("ID de especie a eliminar: ", 1, 100000);
+    int pos = -1;
+    for (int i = 0; i < a->cantEspecies; i++) {
+        if (a->especies[i].id == id) {
+            pos = i;
+            break;
+        }
+    }
+
+    if (pos == -1) {
+        printf("Especie no encontrada.\n");
+        return 0;
+    }
+
+    for (int i = 0; i < a->cantViajeros; i++) {
+        if (a->viajeros[i].especie != NULL && a->viajeros[i].especie->id == id) {
+            printf("No se puede eliminar: hay viajeros asignados a esta especie.\n");
+            return 0;
+        }
+    }
+
+    for (int i = 0; i < a->cantRegla; i++) {
+        if (a->reglas[i].idEspecie == id) {
+            printf("No se puede eliminar: hay reglas asociadas a esta especie.\n");
+            return 0;
+        }
+    }
+
+    if (!confirmarAccion("Seguro que desea eliminar esta especie?")) {
+        printf("Operacion cancelada.\n");
+        return 0;
+    }
+
+    Especie *anterior = a->especies;
+    for (int i = pos; i < a->cantEspecies - 1; i++) {
+        a->especies[i] = a->especies[i + 1];
+    }
+    a->cantEspecies--;
+    actualizarReferenciasViajeros(a, anterior, NULL, NULL);
+
+    printf("Especie eliminada.\n");
+    return 1;
+}
+
+int eliminarObjeto(Aduana *a) {
+    if (a == NULL || a->cantObjetos == 0) {
+        printf("No hay objetos para eliminar.\n");
+        return 0;
+    }
+
+    int id = leerEntero("ID de objeto a eliminar: ", 1, 100000);
+    int pos = -1;
+    for (int i = 0; i < a->cantObjetos; i++) {
+        if (a->objetos[i].id == id) {
+            pos = i;
+            break;
+        }
+    }
+
+    if (pos == -1) {
+        printf("Objeto no encontrado.\n");
+        return 0;
+    }
+
+    for (int i = 0; i < a->cantRegla; i++) {
+        if (a->reglas[i].idObjeto == id) {
+            printf("No se puede eliminar: hay reglas asociadas a este objeto.\n");
+            return 0;
+        }
+    }
+
+    for (int i = 0; i < a->cantViajeros; i++) {
+        for (int j = 0; j < a->viajeros[i].numObjetos; j++) {
+            if (a->viajeros[i].equipaje[j] != NULL && a->viajeros[i].equipaje[j]->id == id) {
+                printf("No se puede eliminar: un viajero lleva este objeto en su equipaje.\n");
+                return 0;
+            }
+        }
+    }
+
+    if (!confirmarAccion("Seguro que desea eliminar este objeto?")) {
+        printf("Operacion cancelada.\n");
+        return 0;
+    }
+
+    Objeto *anterior = a->objetos;
+    for (int i = pos; i < a->cantObjetos - 1; i++) {
+        a->objetos[i] = a->objetos[i + 1];
+    }
+    a->cantObjetos--;
+    actualizarReferenciasViajeros(a, NULL, NULL, anterior);
+
+    printf("Objeto eliminado.\n");
+    return 1;
+}
+
+int eliminarViajero(Aduana *a) {
+    if (a == NULL || a->cantViajeros == 0) {
+        printf("No hay viajeros para eliminar.\n");
+        return 0;
+    }
+
+    int id = leerEntero("ID de viajero a eliminar: ", 1, 100000);
+    int pos = -1;
+    for (int i = 0; i < a->cantViajeros; i++) {
+        if (a->viajeros[i].id == id) {
+            pos = i;
+            break;
+        }
+    }
+
+    if (pos == -1) {
+        printf("Viajero no encontrado.\n");
+        return 0;
+    }
+
+    if (!confirmarAccion("Seguro que desea eliminar este viajero?")) {
+        printf("Operacion cancelada.\n");
+        return 0;
+    }
+
+    free(a->viajeros[pos].equipaje);
+    a->viajeros[pos].equipaje = NULL;
+
+    for (int i = pos; i < a->cantViajeros - 1; i++) {
+        a->viajeros[i] = a->viajeros[i + 1];
+    }
+    a->cantViajeros--;
+
+    printf("Viajero eliminado correctamente.\n");
+    return 1;
+}
 int main(){
 Aduana unoAduana;
 
@@ -741,6 +1127,22 @@ printf("Capacidad: %d\n", viajero->capacidad);
 
     printf("Memoria liberada correctamente\n");
 
-    return 0;
+    Especie *buscarEspecie(Aduana *a, int id, const char *nombre);
+Planeta *buscarPlaneta(Aduana *a, int id, const char *nombre);
+Objeto *buscarObjeto(Aduana *a, int id, const char *nombre);
+Viajero *buscarViajero(Aduana *a, int id, const char *nombre);
+
+void listarEspecies(const Aduana *a);
+void listarPlanetas(const Aduana *a);
+void listarObjetos(const Aduana *a);
+void listarViajeros(const Aduana *a);
+
+int modificarEspecie(Aduana *a);
+int modificarObjeto(Aduana *a);
+int modificarViajero(Aduana *a);
+
+int eliminarEspecie(Aduana *a);
+int eliminarObjeto(Aduana *a);
+int eliminarViajero(Aduana *a);
 return 0;
 }
