@@ -98,6 +98,7 @@ typedef struct {
     int cantIncidentes;
     int capIncidentes;
 } Aduana;
+
 int crecerArreglo(void **arreglo, int *capacidad, size_t tamElemento) {
     int nuevaCapacidad = (*capacidad) * 2;
     void *temporal = realloc(*arreglo, (size_t)nuevaCapacidad * tamElemento);
@@ -259,6 +260,7 @@ int quitarObjetoEquipaje(Viajero *v, int idObjeto) {
 
     return 1;
 }
+
 void leerCadena(const char *mensaje, char *destino, int tam) {
     if (destino == NULL || tam <= 0) {
         return;
@@ -428,7 +430,8 @@ int registrarEspecie(Aduana *a) {
 
     a->especies[a->cantEspecies] = nueva;
     a->cantEspecies++;
-    printf("Especie registrada.\n");
+    printf("[OK] Especie '%s' registrada (ID: %d | Peligro base: +%d sospecha).\n",
+           nueva.nombre, nueva.id, nueva.nvPeligro);
     return 1;
 }
 
@@ -465,7 +468,8 @@ int registrarPlaneta(Aduana *a) {
 
     a->planetas[a->cantPlanetas] = nuevo;
     a->cantPlanetas++;
-    printf("Planeta registrado.\n");
+    printf("[OK] Planeta '%s' registrado (ID: %d | Riesgo base: +%d sospecha).\n",
+           nuevo.nombre, nuevo.id, nuevo.nvRiesgo);
     return 1;
 }
 
@@ -503,7 +507,10 @@ int registrarObjeto(Aduana *a) {
 
     a->objetos[a->cantObjetos] = nuevo;
     a->cantObjetos++;
-    printf("Objeto registrado.\n");
+    printf("[OK] Objeto '%s' registrado (Peligro: +%d%s).\n",
+           nuevo.nombre,
+           nuevo.nvPeligro,
+           nuevo.idContrabando ? " | CONTRABANDO: +20 sospecha extra" : "");
     return 1;
 }
 
@@ -543,7 +550,10 @@ int registrarRegla(Aduana *a) {
 
     a->reglas[a->cantRegla] = nueva;
     a->cantRegla++;
-    printf("Regla registrada.\n");
+    printf("[OK] Regla registrada: Objeto ID %d -> %s para Especie ID %d.\n",
+           nueva.idObjeto,
+           nueva.permitido ? "PERMITIDO" : "PROHIBIDO (+25 sospecha si lo porta)",
+           nueva.idEspecie);
     return 1;
 }
 
@@ -603,6 +613,8 @@ int registrarViajero(Aduana *a) {
             break;
         }
     }
+    printf("  -> Especie asignada: %s (+%d sospecha base)\n",
+           temporal->especie->nombre, temporal->especie->nvPeligro);
 
     int idPla = 0;
     do {
@@ -618,6 +630,8 @@ int registrarViajero(Aduana *a) {
             break;
         }
     }
+    printf("  -> Planeta asignado: %s (+%d sospecha base)\n",
+           temporal->planeta->nombre, temporal->planeta->nvRiesgo);
 
     if (a->cantObjetos > 0) {
         int cantObj = leerEntero("Cuantos objetos lleva en su equipaje?: ", 0, 100);
@@ -636,17 +650,33 @@ int registrarViajero(Aduana *a) {
                 printf("Objeto no encontrado, se omite.\n");
             } else if (!agregarObjetoEquipaje(temporal, encontrado)) {
                 printf("No se pudo agregar el objeto al equipaje.\n");
+            } else {
+                printf("  + Agregado '%s' (Peligro: +%d%s)\n",
+                       encontrado->nombre,
+                       encontrado->nvPeligro,
+                       encontrado->idContrabando ? " | CONTRABANDO: +20 sospecha" : "");
             }
         }
     } else {
         printf("No hay objetos registrados en el catalogo; el equipaje queda vacio.\n");
     }
 
+    int sospechaBase = temporal->especie->nvPeligro + temporal->planeta->nvRiesgo;
+    for (int i = 0; i < temporal->numObjetos; i++) {
+        if (temporal->equipaje[i] != NULL) {
+            sospechaBase += temporal->equipaje[i]->nvPeligro;
+            if (temporal->equipaje[i]->idContrabando) {
+                sospechaBase += 20;
+            }
+        }
+    }
+
     a->viajeros[a->cantViajeros] = *temporal;
     a->cantViajeros++;
     free(temporal);
 
-    printf("Viajero registrado correctamente.\n");
+    printf("[OK] Viajero registrado correctamente. Sospecha preliminar acumulada: +%d pts (pendiente de evaluacion).\n",
+           sospechaBase);
     return 1;
 }
 
@@ -799,7 +829,8 @@ int modificarEspecie(Aduana *a) {
 
     strcpy(esp->nombre, nuevoNombre);
     esp->nvPeligro = nuevoPeligro;
-    printf("Especie modificada correctamente.\n");
+    printf("[OK] Especie '%s' actualizada (Peligro base: +%d sospecha).\n",
+           esp->nombre, esp->nvPeligro);
     return 1;
 }
 
@@ -830,7 +861,10 @@ int modificarObjeto(Aduana *a) {
     strcpy(obj->nombre, nuevoNombre);
     obj->nvPeligro = nuevoPeligro;
     obj->idContrabando = nuevoContra;
-    printf("Objeto modificado correctamente.\n");
+    printf("[OK] Objeto '%s' actualizado (Peligro: +%d%s).\n",
+           obj->nombre,
+           obj->nvPeligro,
+           obj->idContrabando ? " | CONTRABANDO: +20 sospecha" : "");
     return 1;
 }
 
@@ -861,6 +895,8 @@ int modificarViajero(Aduana *a) {
         Especie *esp = buscarEspecie(a, idEsp, NULL);
         if (esp != NULL) {
             v->especie = esp;
+            printf("  -> Especie actualizada a %s (+%d sospecha base)\n",
+                   esp->nombre, esp->nvPeligro);
         } else {
             printf("Especie no encontrada; se mantiene la anterior.\n");
         }
@@ -869,6 +905,8 @@ int modificarViajero(Aduana *a) {
         Planeta *pla = buscarPlaneta(a, idPla, NULL);
         if (pla != NULL) {
             v->planeta = pla;
+            printf("  -> Planeta actualizado a %s (+%d sospecha base)\n",
+                   pla->nombre, pla->nvRiesgo);
         } else {
             printf("Planeta no encontrado; se mantiene el anterior.\n");
         }
@@ -880,21 +918,32 @@ int modificarViajero(Aduana *a) {
             int idObj = leerEntero("ID del objeto a agregar: ", 1, 100000);
             Objeto *obj = buscarObjeto(a, idObj, NULL);
             if (obj != NULL && agregarObjetoEquipaje(v, obj)) {
-                printf("Objeto agregado al equipaje.\n");
+                printf("  + Objeto '%s' agregado al equipaje (Peligro: +%d%s).\n",
+                       obj->nombre,
+                       obj->nvPeligro,
+                       obj->idContrabando ? " | CONTRABANDO: +20 sospecha" : "");
             } else {
                 printf("No se pudo agregar el objeto.\n");
             }
         } else if (op == 2) {
             int idObj = leerEntero("ID del objeto a quitar: ", 1, 100000);
+            Objeto *objPrev = buscarObjeto(a, idObj, NULL);
             if (quitarObjetoEquipaje(v, idObj)) {
-                printf("Objeto quitado del equipaje.\n");
+                if (objPrev != NULL) {
+                    printf("  - Objeto '%s' retirado del equipaje (-%d peligro%s).\n",
+                           objPrev->nombre,
+                           objPrev->nvPeligro,
+                           objPrev->idContrabando ? " y -20 contrabando" : "");
+                } else {
+                    printf("Objeto quitado del equipaje.\n");
+                }
             } else {
                 printf("El objeto no estaba en el equipaje.\n");
             }
         }
     }
 
-    printf("Viajero actualizado.\n");
+    printf("[OK] Viajero actualizado (recuerde volver a evaluarlo si cambio su perfil o equipaje).\n");
     return 1;
 }
 
@@ -1036,6 +1085,7 @@ int eliminarViajero(Aduana *a) {
     printf("Viajero eliminado correctamente.\n");
     return 1;
 }
+
 int registrarIncidenteInterno(Aduana *a, Viajero *v, Objeto *obj, int motivo, Decision dec) {
     if (a == NULL || v == NULL) {
         return 0;
@@ -1404,32 +1454,66 @@ int evaluarViajero(Aduana *a) {
     v->puntajeRiesgo = puntaje;
     v->desicion = (int)dec;
 
+    int baseEsp = (v->especie != NULL) ? v->especie->nvPeligro : 0;
+    int basePla = (v->planeta != NULL) ? v->planeta->nvRiesgo : 0;
+    int bonusConf = detectarConflictos(v);
+
+    printf("\n=== DESGLOSE DE EVALUACION ===\n");
+    printf("Viajero: %s (ID %d)\n", v->nombre, v->id);
+    printf("  + Especie (%s): +%d sospecha\n",
+           (v->especie != NULL) ? v->especie->nombre : "Sin especie", baseEsp);
+    printf("  + Planeta (%s): +%d sospecha\n",
+           (v->planeta != NULL) ? v->planeta->nombre : "Sin planeta", basePla);
+
+    if (v->equipaje != NULL && v->numObjetos > 0) {
+        for (int i = 0; i < v->numObjetos; i++) {
+            Objeto *obj = v->equipaje[i];
+            if (obj != NULL) {
+                int extraContra = obj->idContrabando ? 20 : 0;
+                int extraProhib = !objetoPermitido(a, obj, v->especie) ? 25 : 0;
+                printf("  + Objeto '%s': +%d peligro", obj->nombre, obj->nvPeligro);
+                if (extraContra > 0) printf(" | +20 contrabando");
+                if (extraProhib > 0) printf(" | +25 prohibido por regla");
+                printf("\n");
+            }
+        }
+    } else {
+        printf("  + Equipaje vacio: +0 sospecha\n");
+    }
+
+    if (bonusConf > 0) {
+        printf("  + ALERTA DE CONFLICTO en equipaje: +%d sospecha\n", bonusConf);
+    }
+
     if (prohibidos != NULL && cantProhibidos > 0) {
         for (int i = 0; i < cantProhibidos; i++) {
             Objeto *objReal = buscarObjeto(a, prohibidos[i].id, NULL);
             int motivo = prohibidos[i].idContrabando ? MOTIVO_CONTRABANDO : MOTIVO_OBJETO_PROHIBIDO;
             generarIncidente(a, v, objReal, motivo, dec);
         }
+        printf("  -> Se generaron %d incidente(s) por objetos prohibidos/contrabando.\n", cantProhibidos);
         free(prohibidos);
     }
 
-    if (detectarConflictos(v) > 0) {
+    if (bonusConf > 0) {
         generarIncidente(a, v, NULL, MOTIVO_CONFLICTO_EQUIPAJE, dec);
+        printf("  -> Se genero 1 incidente por conflicto en equipaje.\n");
     }
 
-    if (dec == RECHAZADO && cantProhibidos == 0 && detectarConflictos(v) == 0) {
+    if (dec == RECHAZADO && cantProhibidos == 0 && bonusConf == 0) {
         generarIncidente(a, v, NULL, MOTIVO_RIESGO_ALTO, dec);
+        printf("  -> Se genero 1 incidente por nivel de riesgo critico.\n");
     }
 
-    printf("\n=== EVALUACION DE VIAJERO ===\n");
-    printf("Viajero: %s (ID %d)\n", v->nombre, v->id);
-    printf("Puntaje de riesgo: %d\n", v->puntajeRiesgo);
-    printf("Objetos prohibidos detectados: %d\n", cantProhibidos);
-    printf("Decision: %s\n",
+    printf("----------------------------------------\n");
+    printf("Puntaje total de riesgo: %d (Retenido >= %d | Rechazado >= %d)\n",
+           v->puntajeRiesgo, UMBRAL_RETENIDO, UMBRAL_RECHAZADO);
+    printf("Decision final: %s\n",
            (dec == AUTORIZADO) ? "AUTORIZADO" : (dec == RETENIDO) ? "RETENIDO" : "RECHAZADO");
 
     return 1;
 }
+
 int guardarEspecies(const Aduana *a) {
     if (a == NULL) return 0;
     FILE *f = fopen(ARCHIVO_ESPECIES, "w");
@@ -1727,7 +1811,7 @@ void guardarTodo(const Aduana *a) {
     guardarReglas(a);
     guardarViajeros(a);
     guardarIncidentes(a);
-    printf("Datos guardados en archivos .txt\n");
+    printf("[OK] Todos los datos fueron guardados en sus archivos .txt.\n");
 }
 
 void cargarTodo(Aduana *a) {
@@ -1739,6 +1823,7 @@ void cargarTodo(Aduana *a) {
     cargarViajeros(a);
     cargarIncidentes(a);
 }
+
 void mostrarMenu(void) {
     printf("\n=== SISTEMA DE ADUANA INTERGALACTICA ===\n");
     printf("1) Registro\n");
@@ -1889,7 +1974,10 @@ int main(void) {
     printf("============================================================\n");
     printf("          Bienvenido al SISTEMA DE ADUANAS INTERGALACTICAS\n");
     printf("============================================================\n");
-    printf("\n");
+    printf("Datos cargados -> Especies: %d | Planetas: %d | Objetos: %d | Reglas: %d | Viajeros: %d | Incidentes: %d\n",
+           aduana.cantEspecies, aduana.cantPlanetas, aduana.cantObjetos,
+           aduana.cantRegla, aduana.cantViajeros, aduana.cantIncidentes);
+
     int opcion = -1;
     do {
         mostrarMenu();
