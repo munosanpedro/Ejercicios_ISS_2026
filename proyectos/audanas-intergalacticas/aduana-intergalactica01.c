@@ -1087,6 +1087,7 @@ int registrarIncidenteInterno(Aduana *a, Viajero *v, Objeto *obj, int motivo, De
     a->cantIncidentes++;
     return 1;
 }
+
 int objetoPermitido(const Aduana *a, const Objeto *obj, const Especie *esp) {
     if (a == NULL || obj == NULL) {
         return 0;
@@ -1185,7 +1186,6 @@ int detectarConflictos(const Viajero *v) {
 
     int tieneAgujeroNegro = 0;
     int tieneMascotaInvisible = 0;
-    int bonus = 0;
 
     Objeto **fin = v->equipaje + v->numObjetos;
     for (Objeto **ptr = v->equipaje; ptr < fin; ptr++) {
@@ -1202,22 +1202,60 @@ int detectarConflictos(const Viajero *v) {
     }
 
     if (tieneAgujeroNegro && tieneMascotaInvisible) {
-        bonus += 35;
+        return 35;
+    }
+    return 0;
+}
+
+int calcularRiesgo(const Aduana *a, const Viajero *v) {
+    if (a == NULL || v == NULL) {
+        return 0;
     }
 
-    return bonus;
+    int puntaje = 0;
+
+    if (v->especie != NULL) {
+        puntaje += v->especie->nvPeligro;
+    }
+
+    if (v->planeta != NULL) {
+        puntaje += v->planeta->nvRiesgo;
+    }
+
+    if (v->equipaje != NULL && v->numObjetos > 0) {
+        Objeto **fin = v->equipaje + v->numObjetos;
+        for (Objeto **ptr = v->equipaje; ptr < fin; ptr++) {
+            if (*ptr != NULL) {
+                puntaje += (*ptr)->nvPeligro;
+                if ((*ptr)->idContrabando) {
+                    puntaje += 20;
+                }
+                if (!objetoPermitido(a, *ptr, v->especie)) {
+                    puntaje += 25;
+                }
+            }
+        }
+    }
+
+    puntaje += detectarConflictos(v);
+
+    if (puntaje < 0) {
+        puntaje = 0;
+    }
+
+    return puntaje;
 }
 
 Decision clasificarViajero(const Aduana *a, const Viajero *v, int puntaje) {
     if (a != NULL && v != NULL && v->equipaje != NULL) {
         Objeto **fin = v->equipaje + v->numObjetos;
         for (Objeto **ptr = v->equipaje; ptr < fin; ptr++) {
-    if (*ptr != NULL) {
+            if (*ptr != NULL) {
                 int prohibido = !objetoPermitido(a, *ptr, v->especie);
-    if ((*ptr)->nvPeligro >= 80 || ((*ptr)->idContrabando && prohibido)) {
+                if ((*ptr)->nvPeligro >= 80 || ((*ptr)->idContrabando && prohibido)) {
                     return RECHAZADO;
+                }
             }
-         }
         }
     }
 
@@ -1229,6 +1267,7 @@ Decision clasificarViajero(const Aduana *a, const Viajero *v, int puntaje) {
     }
     return AUTORIZADO;
 }
+
 int evaluarViajero(Aduana *a) {
     if (a == NULL || a->cantViajeros == 0) {
         printf("No hay viajeros registrados para evaluar.\n");
@@ -1256,17 +1295,17 @@ int evaluarViajero(Aduana *a) {
         for (int i = 0; i < cantProhibidos; i++) {
             Objeto *objReal = buscarObjeto(a, prohibidos[i].id, NULL);
             int motivo = prohibidos[i].idContrabando ? MOTIVO_CONTRABANDO : MOTIVO_OBJETO_PROHIBIDO;
-            registrarIncidenteInterno(a, v, objReal, motivo, dec);
+            generarIncidente(a, v, objReal, motivo, dec);
         }
         free(prohibidos);
     }
 
     if (detectarConflictos(v) > 0) {
-        registrarIncidenteInterno(a, v, NULL, MOTIVO_CONFLICTO_EQUIPAJE, dec);
+        generarIncidente(a, v, NULL, MOTIVO_CONFLICTO_EQUIPAJE, dec);
     }
 
     if (dec == RECHAZADO && cantProhibidos == 0 && detectarConflictos(v) == 0) {
-        registrarIncidenteInterno(a, v, NULL, MOTIVO_RIESGO_ALTO, dec);
+        generarIncidente(a, v, NULL, MOTIVO_RIESGO_ALTO, dec);
     }
 
     printf("\n=== EVALUACION DE VIAJERO ===\n");
