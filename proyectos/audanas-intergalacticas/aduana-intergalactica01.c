@@ -1064,12 +1064,23 @@ int registrarIncidenteInterno(Aduana *a, Viajero *v, Objeto *obj, int motivo, De
     inc.motivo = motivo;
     inc.fechaHora = time(NULL);
 
-    if (dec == AUTORIZADO) {
-        strcpy(inc.decision, "AUTORIZADO");
-    } else if (dec == RETENIDO) {
-        strcpy(inc.decision, "RETENIDO");
+    struct tm *infoTiempo = localtime(&inc.fechaHora);
+    if (infoTiempo != NULL) {
+        inc.fecha = (infoTiempo->tm_year + 1900) * 10000 +
+                    (infoTiempo->tm_mon + 1) * 100 +
+                    infoTiempo->tm_mday;
+        inc.hora = infoTiempo->tm_hour * 100 + infoTiempo->tm_min;
     } else {
-        strcpy(inc.decision, "RECHAZADO");
+        inc.fecha = 0;
+        inc.hora = 0;
+    }
+
+    if (dec == AUTORIZADO) {
+        strcpy(inc.desicion, "AUTORIZADO");
+    } else if (dec == RETENIDO) {
+        strcpy(inc.desicion, "RETENIDO");
+    } else {
+        strcpy(inc.desicion, "RECHAZADO");
     }
 
     a->incidentes[a->cantIncidentes] = inc;
