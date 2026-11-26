@@ -98,56 +98,6 @@ typedef struct {
     int cantIncidentes;
     int capIncidentes;
 } Aduana;
-
-int crecerArreglo(void **arreglo, int *capacidad, size_t tamElemento);
-Viajero *crearViajero(int capacidadInicial);
-void liberarViajero(Viajero *v);
-int crearAduana(Aduana *j, int capInicial);
-void liberarAduana(Aduana *j);
-int agregarObjetoEquipaje(Viajero *v, Objeto *obj);
-int quitarObjetoEquipaje(Viajero *v, int idObjeto);
-
-void leerCadena(const char *mensaje, char *destino, int tam);
-int leerEntero(const char *mensaje, int min, int max);
-int validarNombre(const char *cadena);
-int existeId(const Aduana *a, char tipo, int id);
-int validarIdUnico(const Aduana *a, char tipo, int id);
-int confirmarAccion(const char *mensaje);
-
-void actualizarReferenciasViajeros(Aduana *a, const Especie *baseEsp, const Planeta *basePla, const Objeto *baseObj);
-int registrarEspecie(Aduana *a);
-int registrarPlaneta(Aduana *a);
-int registrarObjeto(Aduana *a);
-int registrarRegla(Aduana *a);
-int registrarViajero(Aduana *a);
-
-Especie *buscarEspecie(Aduana *a, int id, const char *nombre);
-Planeta *buscarPlaneta(Aduana *a, int id, const char *nombre);
-Objeto *buscarObjeto(Aduana *a, int id, const char *nombre);
-Viajero *buscarViajero(Aduana *a, int id, const char *nombre);
-
-void listarEspecies(const Aduana *a);
-void listarPlanetas(const Aduana *a);
-void listarObjetos(const Aduana *a);
-void listarViajeros(const Aduana *a);
-
-int modificarEspecie(Aduana *a);
-int modificarObjeto(Aduana *a);
-int modificarViajero(Aduana *a);
-
-int eliminarEspecie(Aduana *a);
-int eliminarObjeto(Aduana *a);
-int eliminarViajero(Aduana *a);
-
-int registrarIncidenteInterno(Aduana *a, Viajero *v, Objeto *obj, int motivo, Decision dec);
-int generarIncidente(Aduana *a, Viajero *v, Objeto *obj, int motivo, Decision dec);
-int objetoPermitido(const Aduana *a, const Objeto *obj, const Especie *esp);
-int detectarObjetosProhibidos(const Aduana *a, const Viajero *v, Objeto **prohibidos, int *cantProhibidos);
-int detectarConflictos(const Viajero *v);
-int calcularRiesgo(const Aduana *a, const Viajero *v);
-Decision clasificarViajero(const Aduana *a, const Viajero *v, int puntaje);
-int evaluarViajero(Aduana *a);
-
 int crecerArreglo(void **arreglo, int *capacidad, size_t tamElemento) {
     int nuevaCapacidad = (*capacidad) * 2;
     void *temporal = realloc(*arreglo, (size_t)nuevaCapacidad * tamElemento);
@@ -1132,6 +1082,161 @@ int generarIncidente(Aduana *a, Viajero *v, Objeto *obj, int motivo, Decision de
     return registrarIncidenteInterno(a, v, obj, motivo, dec);
 }
 
+void listarIncidentes(const Aduana *a) {
+    if (a == NULL || a->cantIncidentes == 0) {
+        printf("No hay incidentes registrados.\n");
+        return;
+    }
+
+    int filtroId = leerEntero("Filtrar por ID de viajero (0 para ver todos): ", 0, 100000);
+
+    printf("\n=== INCIDENTES ===\n");
+    int mostrados = 0;
+    for (int i = 0; i < a->cantIncidentes; i++) {
+        const Incidente *inc = &a->incidentes[i];
+        if (filtroId > 0 && (inc->viajero == NULL || inc->viajero->id != filtroId)) {
+            continue;
+        }
+
+        const char *nomViajero = (inc->viajero != NULL) ? inc->viajero->nombre : "Desconocido";
+        const char *nomObjeto = (inc->objeto != NULL) ? inc->objeto->nombre : "Ninguno";
+        printf("ID: %d | Viajero: %s | Objeto: %s | Motivo: %d | Decision: %s | Fecha: %d | Hora: %04d\n",
+               inc->id, nomViajero, nomObjeto, inc->motivo, inc->desicion, inc->fecha, inc->hora);
+        mostrados++;
+    }
+
+    if (mostrados == 0) {
+        printf("No hay incidentes para ese viajero.\n");
+    }
+}
+
+void reporteViajero(const Aduana *a) {
+    if (a == NULL || a->cantViajeros == 0) {
+        printf("No hay viajeros registrados.\n");
+        return;
+    }
+
+    int id = leerEntero("ID de viajero para reporte: ", 1, 100000);
+    Viajero *v = buscarViajero((Aduana *)a, id, NULL);
+    if (v == NULL) {
+        printf("Viajero no encontrado.\n");
+        return;
+    }
+
+    printf("\n=== REPORTE DE VIAJERO ===\n");
+    printf("ID: %d | Nombre: %s\n", v->id, v->nombre);
+    printf("Especie: %s\n", (v->especie != NULL) ? v->especie->nombre : "Sin especie");
+    printf("Planeta: %s\n", (v->planeta != NULL) ? v->planeta->nombre : "Sin planeta");
+    printf("Puntaje de riesgo: %d | Decision: %d\n", v->puntajeRiesgo, v->desicion);
+
+    printf("Equipaje (%d objetos):\n", v->numObjetos);
+    for (int i = 0; i < v->numObjetos; i++) {
+        if (v->equipaje[i] != NULL) {
+            printf("  - %s (ID %d, Peligro %d)\n",
+                   v->equipaje[i]->nombre, v->equipaje[i]->id, v->equipaje[i]->nvPeligro);
+        }
+    }
+
+    printf("Incidentes del viajero:\n");
+    int countInc = 0;
+    for (int i = 0; i < a->cantIncidentes; i++) {
+        if (a->incidentes[i].viajero != NULL && a->incidentes[i].viajero->id == v->id) {
+            printf("  - Incidente #%d: Motivo %d | Decision %s\n",
+                   a->incidentes[i].id, a->incidentes[i].motivo, a->incidentes[i].desicion);
+            countInc++;
+        }
+    }
+    if (countInc == 0) {
+        printf("  Sin incidentes registrados.\n");
+    }
+}
+
+void reporteGeneral(const Aduana *a) {
+    if (a == NULL) {
+        return;
+    }
+
+    int totAutorizados = 0;
+    int totRetenidos = 0;
+    int totRechazados = 0;
+
+    for (int i = 0; i < a->cantViajeros; i++) {
+        if (a->viajeros[i].desicion == AUTORIZADO) totAutorizados++;
+        else if (a->viajeros[i].desicion == RETENIDO) totRetenidos++;
+        else if (a->viajeros[i].desicion == RECHAZADO) totRechazados++;
+    }
+
+    printf("\n=== REPORTE GENERAL ===\n");
+    printf("Total viajeros: %d (Autorizados: %d | Retenidos: %d | Rechazados: %d)\n",
+           a->cantViajeros, totAutorizados, totRetenidos, totRechazados);
+    printf("Total incidentes: %d\n", a->cantIncidentes);
+
+    printf("\nIncidentes por especie:\n");
+    for (int i = 0; i < a->cantEspecies; i++) {
+        int cont = 0;
+        for (int j = 0; j < a->cantIncidentes; j++) {
+            if (a->incidentes[j].viajero != NULL &&
+                a->incidentes[j].viajero->especie != NULL &&
+                a->incidentes[j].viajero->especie->id == a->especies[i].id) {
+                cont++;
+            }
+        }
+        printf("  - %s: %d\n", a->especies[i].nombre, cont);
+    }
+
+    printf("\nObjetos detectados en incidentes:\n");
+    for (int i = 0; i < a->cantObjetos; i++) {
+        int cont = 0;
+        for (int j = 0; j < a->cantIncidentes; j++) {
+            if (a->incidentes[j].objeto != NULL &&
+                a->incidentes[j].objeto->id == a->objetos[i].id) {
+                cont++;
+            }
+        }
+        printf("  - %s: %d\n", a->objetos[i].nombre, cont);
+    }
+}
+
+int exportarReporte(const Aduana *a) {
+    if (a == NULL) {
+        return 0;
+    }
+
+    FILE *f = fopen("reporte_aduana.txt", "w");
+    if (f == NULL) {
+        printf("Error al crear reporte_aduana.txt.\n");
+        return 0;
+    }
+
+    fprintf(f, "=== REPORTE GENERAL DE ADUANA ===\n");
+    fprintf(f, "Especies: %d | Planetas: %d | Objetos: %d | Reglas: %d\n",
+            a->cantEspecies, a->cantPlanetas, a->cantObjetos, a->cantRegla);
+    fprintf(f, "Viajeros: %d | Incidentes: %d\n\n",
+            a->cantViajeros, a->cantIncidentes);
+
+    fprintf(f, "--- VIAJEROS ---\n");
+    for (int i = 0; i < a->cantViajeros; i++) {
+        const Viajero *v = &a->viajeros[i];
+        fprintf(f, "ID:%d | Nombre:%s | Riesgo:%d | Decision:%d | Objetos:%d\n",
+                v->id, v->nombre, v->puntajeRiesgo, v->desicion, v->numObjetos);
+    }
+
+    fprintf(f, "\n--- INCIDENTES ---\n");
+    for (int i = 0; i < a->cantIncidentes; i++) {
+        const Incidente *inc = &a->incidentes[i];
+        fprintf(f, "ID:%d | Viajero:%s | Objeto:%s | Motivo:%d | Decision:%s\n",
+                inc->id,
+                (inc->viajero != NULL) ? inc->viajero->nombre : "N/A",
+                (inc->objeto != NULL) ? inc->objeto->nombre : "N/A",
+                inc->motivo,
+                inc->desicion);
+    }
+
+    fclose(f);
+    printf("Reporte exportado a reporte_aduana.txt\n");
+    return 1;
+}
+
 int objetoPermitido(const Aduana *a, const Objeto *obj, const Especie *esp) {
     if (a == NULL || obj == NULL) {
         return 0;
@@ -1324,6 +1429,315 @@ int evaluarViajero(Aduana *a) {
            (dec == AUTORIZADO) ? "AUTORIZADO" : (dec == RETENIDO) ? "RETENIDO" : "RECHAZADO");
 
     return 1;
+}
+int guardarEspecies(const Aduana *a) {
+    if (a == NULL) return 0;
+    FILE *f = fopen(ARCHIVO_ESPECIES, "w");
+    if (f == NULL) return 0;
+
+    for (int i = 0; i < a->cantEspecies; i++) {
+        fprintf(f, "%d|%s|%d\n",
+                a->especies[i].id,
+                a->especies[i].nombre,
+                a->especies[i].nvPeligro);
+    }
+    fclose(f);
+    return 1;
+}
+
+int guardarPlanetas(const Aduana *a) {
+    if (a == NULL) return 0;
+    FILE *f = fopen(ARCHIVO_PLANETAS, "w");
+    if (f == NULL) return 0;
+
+    for (int i = 0; i < a->cantPlanetas; i++) {
+        fprintf(f, "%d|%s|%d\n",
+                a->planetas[i].id,
+                a->planetas[i].nombre,
+                a->planetas[i].nvRiesgo);
+    }
+    fclose(f);
+    return 1;
+}
+
+int guardarObjetos(const Aduana *a) {
+    if (a == NULL) return 0;
+    FILE *f = fopen(ARCHIVO_OBJETOS, "w");
+    if (f == NULL) return 0;
+
+    for (int i = 0; i < a->cantObjetos; i++) {
+        fprintf(f, "%d|%s|%d|%d\n",
+                a->objetos[i].id,
+                a->objetos[i].nombre,
+                a->objetos[i].nvPeligro,
+                a->objetos[i].idContrabando);
+    }
+    fclose(f);
+    return 1;
+}
+
+int guardarReglas(const Aduana *a) {
+    if (a == NULL) return 0;
+    FILE *f = fopen(ARCHIVO_REGLAS, "w");
+    if (f == NULL) return 0;
+
+    for (int i = 0; i < a->cantRegla; i++) {
+        fprintf(f, "%d|%d|%d\n",
+                a->reglas[i].idObjeto,
+                a->reglas[i].idEspecie,
+                a->reglas[i].permitido);
+    }
+    fclose(f);
+    return 1;
+}
+
+int guardarViajeros(const Aduana *a) {
+    if (a == NULL) return 0;
+    FILE *f = fopen(ARCHIVO_VIAJEROS, "w");
+    if (f == NULL) return 0;
+
+    for (int i = 0; i < a->cantViajeros; i++) {
+        const Viajero *v = &a->viajeros[i];
+        int idEsp = (v->especie != NULL) ? v->especie->id : 0;
+        int idPla = (v->planeta != NULL) ? v->planeta->id : 0;
+
+        fprintf(f, "%d|%s|%d|%d|%d|%d|%d",
+                v->id, v->nombre, idEsp, idPla,
+                v->puntajeRiesgo, v->desicion, v->numObjetos);
+
+        for (int j = 0; j < v->numObjetos; j++) {
+            int idObj = (v->equipaje[j] != NULL) ? v->equipaje[j]->id : 0;
+            fprintf(f, "|%d", idObj);
+        }
+        fprintf(f, "\n");
+    }
+    fclose(f);
+    return 1;
+}
+
+int guardarIncidentes(const Aduana *a) {
+    if (a == NULL) return 0;
+    FILE *f = fopen(ARCHIVO_INCIDENTES, "w");
+    if (f == NULL) return 0;
+
+    for (int i = 0; i < a->cantIncidentes; i++) {
+        const Incidente *inc = &a->incidentes[i];
+        int idVia = (inc->viajero != NULL) ? inc->viajero->id : 0;
+        int idObj = (inc->objeto != NULL) ? inc->objeto->id : 0;
+
+        fprintf(f, "%d|%d|%d|%ld|%d|%d|%d|%s\n",
+                inc->id, idVia, idObj, (long)inc->fechaHora,
+                inc->fecha, inc->hora, inc->motivo, inc->desicion);
+    }
+    fclose(f);
+    return 1;
+}
+
+int cargarEspecies(Aduana *a) {
+    if (a == NULL) return 0;
+    FILE *f = fopen(ARCHIVO_ESPECIES, "r");
+    if (f == NULL) return 0;
+
+    char linea[256];
+    while (fgets(linea, sizeof(linea), f) != NULL) {
+        linea[strcspn(linea, "\n")] = '\0';
+        if (strlen(linea) == 0) continue;
+
+        Especie esp;
+        if (sscanf(linea, "%d|%49[^|]|%d", &esp.id, esp.nombre, &esp.nvPeligro) == 3) {
+            if (a->cantEspecies == a->capEspecies) {
+                if (!crecerArreglo((void **)&a->especies, &a->capEspecies, sizeof(Especie))) break;
+            }
+            a->especies[a->cantEspecies++] = esp;
+        }
+    }
+    fclose(f);
+    return 1;
+}
+
+int cargarPlanetas(Aduana *a) {
+    if (a == NULL) return 0;
+    FILE *f = fopen(ARCHIVO_PLANETAS, "r");
+    if (f == NULL) return 0;
+
+    char linea[256];
+    while (fgets(linea, sizeof(linea), f) != NULL) {
+        linea[strcspn(linea, "\n")] = '\0';
+        if (strlen(linea) == 0) continue;
+
+        Planeta pla;
+        if (sscanf(linea, "%d|%19[^|]|%d", &pla.id, pla.nombre, &pla.nvRiesgo) == 3) {
+            if (a->cantPlanetas == a->capPlanetas) {
+                if (!crecerArreglo((void **)&a->planetas, &a->capPlanetas, sizeof(Planeta))) break;
+            }
+            a->planetas[a->cantPlanetas++] = pla;
+        }
+    }
+    fclose(f);
+    return 1;
+}
+
+int cargarObjetos(Aduana *a) {
+    if (a == NULL) return 0;
+    FILE *f = fopen(ARCHIVO_OBJETOS, "r");
+    if (f == NULL) return 0;
+
+    char linea[256];
+    while (fgets(linea, sizeof(linea), f) != NULL) {
+        linea[strcspn(linea, "\n")] = '\0';
+        if (strlen(linea) == 0) continue;
+
+        Objeto obj;
+        if (sscanf(linea, "%d|%19[^|]|%d|%d", &obj.id, obj.nombre, &obj.nvPeligro, &obj.idContrabando) == 4) {
+            if (a->cantObjetos == a->capObjetos) {
+                if (!crecerArreglo((void **)&a->objetos, &a->capObjetos, sizeof(Objeto))) break;
+            }
+            a->objetos[a->cantObjetos++] = obj;
+        }
+    }
+    fclose(f);
+    return 1;
+}
+
+int cargarReglas(Aduana *a) {
+    if (a == NULL) return 0;
+    FILE *f = fopen(ARCHIVO_REGLAS, "r");
+    if (f == NULL) return 0;
+
+    char linea[256];
+    while (fgets(linea, sizeof(linea), f) != NULL) {
+        linea[strcspn(linea, "\n")] = '\0';
+        if (strlen(linea) == 0) continue;
+
+        Regla r;
+        if (sscanf(linea, "%d|%d|%d", &r.idObjeto, &r.idEspecie, &r.permitido) == 3) {
+            if (a->cantRegla == a->capRegla) {
+                if (!crecerArreglo((void **)&a->reglas, &a->capRegla, sizeof(Regla))) break;
+            }
+            a->reglas[a->cantRegla++] = r;
+        }
+    }
+    fclose(f);
+    return 1;
+}
+
+int cargarViajeros(Aduana *a) {
+    if (a == NULL) return 0;
+    FILE *f = fopen(ARCHIVO_VIAJEROS, "r");
+    if (f == NULL) return 0;
+
+    char linea[512];
+    while (fgets(linea, sizeof(linea), f) != NULL) {
+        linea[strcspn(linea, "\n")] = '\0';
+        if (strlen(linea) == 0) continue;
+
+        int id = 0, idEsp = 0, idPla = 0, riesgo = 0, decision = 0, cantObj = 0;
+        char nombre[30];
+
+        char *token = strtok(linea, "|");
+        if (!token) continue;
+        id = atoi(token);
+
+        token = strtok(NULL, "|");
+        if (!token) continue;
+        strncpy(nombre, token, sizeof(nombre) - 1);
+        nombre[sizeof(nombre) - 1] = '\0';
+
+        token = strtok(NULL, "|"); if (!token) continue; idEsp = atoi(token);
+        token = strtok(NULL, "|"); if (!token) continue; idPla = atoi(token);
+        token = strtok(NULL, "|"); if (!token) continue; riesgo = atoi(token);
+        token = strtok(NULL, "|"); if (!token) continue; decision = atoi(token);
+        token = strtok(NULL, "|"); if (!token) continue; cantObj = atoi(token);
+
+        Viajero *vTemp = crearViajero(cantObj > 2 ? cantObj : 2);
+        if (vTemp == NULL) continue;
+
+        vTemp->id = id;
+        strcpy(vTemp->nombre, nombre);
+        vTemp->especie = buscarEspecie(a, idEsp, NULL);
+        vTemp->planeta = buscarPlaneta(a, idPla, NULL);
+        vTemp->puntajeRiesgo = riesgo;
+        vTemp->desicion = decision;
+
+        for (int i = 0; i < cantObj; i++) {
+            token = strtok(NULL, "|");
+            if (token != NULL) {
+                int idObj = atoi(token);
+                Objeto *obj = buscarObjeto(a, idObj, NULL);
+                if (obj != NULL) {
+                    agregarObjetoEquipaje(vTemp, obj);
+                }
+            }
+        }
+
+        if (a->cantViajeros == a->capViajeros) {
+            if (!crecerArreglo((void **)&a->viajeros, &a->capViajeros, sizeof(Viajero))) {
+                liberarViajero(vTemp);
+                break;
+            }
+        }
+        a->viajeros[a->cantViajeros++] = *vTemp;
+        free(vTemp);
+    }
+    fclose(f);
+    return 1;
+}
+
+int cargarIncidentes(Aduana *a) {
+    if (a == NULL) return 0;
+    FILE *f = fopen(ARCHIVO_INCIDENTES, "r");
+    if (f == NULL) return 0;
+
+    char linea[256];
+    while (fgets(linea, sizeof(linea), f) != NULL) {
+        linea[strcspn(linea, "\n")] = '\0';
+        if (strlen(linea) == 0) continue;
+
+        int id = 0, idVia = 0, idObj = 0, fecha = 0, hora = 0, motivo = 0;
+        long ts = 0;
+        char dec[50];
+
+        if (sscanf(linea, "%d|%d|%d|%ld|%d|%d|%d|%49[^\n]",
+                   &id, &idVia, &idObj, &ts, &fecha, &hora, &motivo, dec) == 8) {
+            Incidente inc;
+            inc.id = id;
+            inc.viajero = buscarViajero(a, idVia, NULL);
+            inc.objeto = buscarObjeto(a, idObj, NULL);
+            inc.fechaHora = (time_t)ts;
+            inc.fecha = fecha;
+            inc.hora = hora;
+            inc.motivo = motivo;
+            strcpy(inc.desicion, dec);
+
+            if (a->cantIncidentes == a->capIncidentes) {
+                if (!crecerArreglo((void **)&a->incidentes, &a->capIncidentes, sizeof(Incidente))) break;
+            }
+            a->incidentes[a->cantIncidentes++] = inc;
+        }
+    }
+    fclose(f);
+    return 1;
+}
+
+void guardarTodo(const Aduana *a) {
+    if (a == NULL) return;
+    guardarEspecies(a);
+    guardarPlanetas(a);
+    guardarObjetos(a);
+    guardarReglas(a);
+    guardarViajeros(a);
+    guardarIncidentes(a);
+    printf("Datos guardados en archivos .txt\n");
+}
+
+void cargarTodo(Aduana *a) {
+    if (a == NULL) return;
+    cargarEspecies(a);
+    cargarPlanetas(a);
+    cargarObjetos(a);
+    cargarReglas(a);
+    cargarViajeros(a);
+    cargarIncidentes(a);
 }
 
 int main(void) {
