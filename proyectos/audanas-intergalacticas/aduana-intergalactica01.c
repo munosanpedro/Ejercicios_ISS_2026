@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
 #define MAX_NOMBRE 50
 #define MAX_NOMBRE_CORTO 20
 
@@ -14,6 +15,7 @@
 #define ARCHIVO_REGLAS     "reglas.txt"
 #define ARCHIVO_VIAJEROS   "viajeros.txt"
 #define ARCHIVO_INCIDENTES "incidentes.txt"
+
 typedef enum {
     AUTORIZADO = 0,
     RETENIDO   = 1,
@@ -27,39 +29,44 @@ typedef enum {
     MOTIVO_CONFLICTO_EQUIPAJE,
     MOTIVO_RIESGO_ALTO
 } MotivoIncidente;
-typedef struct{
+
+typedef struct {
     char nombre[50];
     int id;
     int nvPeligro;
 } Especie;
 
-typedef struct{
+typedef struct {
     char nombre[20];
     int id;
     int nvRiesgo;
 } Planeta;
-typedef struct{
+
+typedef struct {
     char nombre[20];
     int id;
     int nvPeligro;
     int idContrabando;
 } Objeto;
-typedef struct{
-int idObjeto;
-int idEspecie;
-int permitido;
+
+typedef struct {
+    int idObjeto;
+    int idEspecie;
+    int permitido;
 } Regla;
-typedef struct{
-char nombre[30];
-int id;
-Especie *especie;
-Planeta *planeta;
- Objeto **equipaje;
-int numObjetos;
-int capacidad;
-int puntajeRiesgo;
-int desicion;
+
+typedef struct {
+    char nombre[30];
+    int id;
+    Especie *especie;
+    Planeta *planeta;
+    Objeto **equipaje;
+    int numObjetos;
+    int capacidad;
+    int puntajeRiesgo;
+    int desicion;
 } Viajero;
+
 typedef struct {
     char desicion[50];
     int id;
@@ -71,7 +78,7 @@ typedef struct {
     Objeto *objeto;
 } Incidente;
 
-typedef struct{
+typedef struct {
     Especie *especies;
     int cantEspecies;
     int capEspecies;
@@ -91,33 +98,79 @@ typedef struct{
     int cantIncidentes;
     int capIncidentes;
 } Aduana;
-int crecerArreglo(void **arreglo, int *capacidad, size_t tamElemento){
-    int nuevaCapacidad=(*capacidad)*2;
-    void *temporal=realloc(*arreglo,(size_t)nuevaCapacidad*tamElemento);
-    if(temporal==NULL){
+
+int crecerArreglo(void **arreglo, int *capacidad, size_t tamElemento);
+Viajero *crearViajero(int capacidadInicial);
+void liberarViajero(Viajero *v);
+int crearAduana(Aduana *j, int capInicial);
+void liberarAduana(Aduana *j);
+int agregarObjetoEquipaje(Viajero *v, Objeto *obj);
+int quitarObjetoEquipaje(Viajero *v, int idObjeto);
+
+void leerCadena(const char *mensaje, char *destino, int tam);
+int leerEntero(const char *mensaje, int min, int max);
+int validarNombre(const char *cadena);
+int existeId(const Aduana *a, char tipo, int id);
+int validarIdUnico(const Aduana *a, char tipo, int id);
+int confirmarAccion(const char *mensaje);
+
+void actualizarReferenciasViajeros(Aduana *a, const Especie *baseEsp, const Planeta *basePla, const Objeto *baseObj);
+int registrarEspecie(Aduana *a);
+int registrarPlaneta(Aduana *a);
+int registrarObjeto(Aduana *a);
+int registrarRegla(Aduana *a);
+int registrarViajero(Aduana *a);
+
+Especie *buscarEspecie(Aduana *a, int id, const char *nombre);
+Planeta *buscarPlaneta(Aduana *a, int id, const char *nombre);
+Objeto *buscarObjeto(Aduana *a, int id, const char *nombre);
+Viajero *buscarViajero(Aduana *a, int id, const char *nombre);
+
+void listarEspecies(const Aduana *a);
+void listarPlanetas(const Aduana *a);
+void listarObjetos(const Aduana *a);
+void listarViajeros(const Aduana *a);
+
+int modificarEspecie(Aduana *a);
+int modificarObjeto(Aduana *a);
+int modificarViajero(Aduana *a);
+
+int eliminarEspecie(Aduana *a);
+int eliminarObjeto(Aduana *a);
+int eliminarViajero(Aduana *a);
+
+int registrarIncidenteInterno(Aduana *a, Viajero *v, Objeto *obj, int motivo, Decision dec);
+int generarIncidente(Aduana *a, Viajero *v, Objeto *obj, int motivo, Decision dec);
+int objetoPermitido(const Aduana *a, const Objeto *obj, const Especie *esp);
+int detectarObjetosProhibidos(const Aduana *a, const Viajero *v, Objeto **prohibidos, int *cantProhibidos);
+int detectarConflictos(const Viajero *v);
+int calcularRiesgo(const Aduana *a, const Viajero *v);
+Decision clasificarViajero(const Aduana *a, const Viajero *v, int puntaje);
+int evaluarViajero(Aduana *a);
+
+int crecerArreglo(void **arreglo, int *capacidad, size_t tamElemento) {
+    int nuevaCapacidad = (*capacidad) * 2;
+    void *temporal = realloc(*arreglo, (size_t)nuevaCapacidad * tamElemento);
+    if (temporal == NULL) {
         return 0;
     }
-    *arreglo=temporal;
-    *capacidad=nuevaCapacidad;
+    *arreglo = temporal;
+    *capacidad = nuevaCapacidad;
     return 1;
 }
-Viajero *crearViajero(int capacidadInicial){
 
-    if(capacidadInicial <= 0){
+Viajero *crearViajero(int capacidadInicial) {
+    if (capacidadInicial <= 0) {
         return NULL;
     }
 
     Viajero *nuevo = malloc(sizeof(Viajero));
-
-    if(nuevo == NULL){
+    if (nuevo == NULL) {
         return NULL;
     }
 
-    nuevo->equipaje = malloc(
-        (size_t)capacidadInicial * sizeof(Objeto*)
-    );
-
-    if(nuevo->equipaje == NULL){
+    nuevo->equipaje = malloc((size_t)capacidadInicial * sizeof(Objeto *));
+    if (nuevo->equipaje == NULL) {
         free(nuevo);
         return NULL;
     }
@@ -132,9 +185,9 @@ Viajero *crearViajero(int capacidadInicial){
 
     return nuevo;
 }
-void liberarViajero(Viajero *v){
 
-    if(v == NULL){
+void liberarViajero(Viajero *v) {
+    if (v == NULL) {
         return;
     }
 
@@ -143,122 +196,112 @@ void liberarViajero(Viajero *v){
 
     free(v);
 }
-int crearAduana(Aduana *j, int capInicial){
-    if(j == NULL || capInicial <= 0){
-    return 0;
-}
-    j->cantEspecies=0;
-    j->capEspecies=capInicial;
+
+int crearAduana(Aduana *j, int capInicial) {
+    if (j == NULL || capInicial <= 0) {
+        return 0;
+    }
+    j->cantEspecies = 0;
+    j->capEspecies = capInicial;
     j->especies = malloc((size_t)capInicial * sizeof(Especie));
-    
-    j->cantPlanetas=0;
-    j->capPlanetas=capInicial;
+
+    j->cantPlanetas = 0;
+    j->capPlanetas = capInicial;
     j->planetas = malloc((size_t)capInicial * sizeof(Planeta));
-    
-    j->cantObjetos=0;
-    j->capObjetos=capInicial;
+
+    j->cantObjetos = 0;
+    j->capObjetos = capInicial;
     j->objetos = malloc((size_t)capInicial * sizeof(Objeto));
-    
-    j->cantRegla=0;
-    j->capRegla=capInicial;
+
+    j->cantRegla = 0;
+    j->capRegla = capInicial;
     j->reglas = malloc((size_t)capInicial * sizeof(Regla));
-    
-    j->cantViajeros=0;
-    j->capViajeros=capInicial;
+
+    j->cantViajeros = 0;
+    j->capViajeros = capInicial;
     j->viajeros = malloc((size_t)capInicial * sizeof(Viajero));
-    
-    j->cantIncidentes=0;
-    j->capIncidentes=capInicial;
+
+    j->cantIncidentes = 0;
+    j->capIncidentes = capInicial;
     j->incidentes = malloc((size_t)capInicial * sizeof(Incidente));
-        if(!j->especies||!j->planetas||!j->objetos||!j->reglas||!j->viajeros||!j->incidentes){
-            free(j->especies);
-            free(j->planetas);
-            free(j->objetos);
-            free(j->reglas);
-            free(j->viajeros);
-            free(j->incidentes);
-                return 0;
-        }
-        return 1;
+
+    if (!j->especies || !j->planetas || !j->objetos || !j->reglas || !j->viajeros || !j->incidentes) {
+        free(j->especies);
+        free(j->planetas);
+        free(j->objetos);
+        free(j->reglas);
+        free(j->viajeros);
+        free(j->incidentes);
+        return 0;
+    }
+    return 1;
 }
-void liberarAduana(Aduana *j){
-    if(j == NULL){
-    return;
-}
+
+void liberarAduana(Aduana *j) {
+    if (j == NULL) {
+        return;
+    }
     free(j->especies);
     free(j->planetas);
     free(j->objetos);
     free(j->reglas);
-    for(int i = 0; i < j->cantViajeros; i++){
-    free(j->viajeros[i].equipaje);
-    j->viajeros[i].equipaje = NULL;
-}
+    for (int i = 0; i < j->cantViajeros; i++) {
+        free(j->viajeros[i].equipaje);
+        j->viajeros[i].equipaje = NULL;
+    }
     free(j->viajeros);
     free(j->incidentes);
-    j->especies=NULL;
-    j->planetas=NULL;
-    j->objetos=NULL;
-    j->reglas=NULL;
-    j->viajeros=NULL;
-    j->incidentes=NULL;
+    j->especies = NULL;
+    j->planetas = NULL;
+    j->objetos = NULL;
+    j->reglas = NULL;
+    j->viajeros = NULL;
+    j->incidentes = NULL;
 }
-int agregarObjetoEquipaje(Viajero *v, Objeto *obj){
 
-    if(v == NULL || obj == NULL){
+int agregarObjetoEquipaje(Viajero *v, Objeto *obj) {
+    if (v == NULL || obj == NULL) {
         return 0;
     }
 
-    if(v->numObjetos == v->capacidad){
-
-        if(!crecerArreglo((void**)&v->equipaje,
-                          &v->capacidad,
-                          sizeof(Objeto*))){
-
+    if (v->numObjetos == v->capacidad) {
+        if (!crecerArreglo((void **)&v->equipaje, &v->capacidad, sizeof(Objeto *))) {
             return 0;
         }
     }
 
     v->equipaje[v->numObjetos] = obj;
-
     v->numObjetos++;
 
     return 1;
 }
-int quitarObjetoEquipaje(Viajero *v, int idObjeto){
 
-    if(v == NULL || v->equipaje == NULL){
+int quitarObjetoEquipaje(Viajero *v, int idObjeto) {
+    if (v == NULL || v->equipaje == NULL) {
         return 0;
     }
 
     int posicion = -1;
-    for(int i = 0; i < v->numObjetos; i++){
-
-        if(v->equipaje[i]->id == idObjeto){
+    for (int i = 0; i < v->numObjetos; i++) {
+        if (v->equipaje[i]->id == idObjeto) {
             posicion = i;
             break;
         }
     }
-    if(posicion == -1){
+    if (posicion == -1) {
         return 0;
     }
-    for(int i = posicion; i < v->numObjetos - 1; i++){
-
+    for (int i = posicion; i < v->numObjetos - 1; i++) {
         v->equipaje[i] = v->equipaje[i + 1];
     }
 
     v->numObjetos--;
-    if(v->capacidad > 2 &&
-       v->numObjetos <= v->capacidad / 2){
-
+    if (v->capacidad > 2 && v->numObjetos <= v->capacidad / 2) {
         int nuevaCapacidad = v->capacidad / 2;
 
-        Objeto **temporal = realloc(
-            v->equipaje,
-            (size_t)nuevaCapacidad * sizeof(Objeto*)
-        );
+        Objeto **temporal = realloc(v->equipaje, (size_t)nuevaCapacidad * sizeof(Objeto *));
 
-        if(temporal != NULL){
-
+        if (temporal != NULL) {
             v->equipaje = temporal;
             v->capacidad = nuevaCapacidad;
         }
@@ -366,12 +409,8 @@ int confirmarAccion(const char *mensaje) {
     }
     return 0;
 }
-void actualizarReferenciasViajeros(Aduana *a, const Especie *baseEsp, const Planeta *basePla, const Objeto *baseObj);
-int registrarEspecie(Aduana *a);
-int registrarPlaneta(Aduana *a);
-int registrarObjeto(Aduana *a);
-int registrarRegla(Aduana *a);
-int registrarViajero(Aduana *a);void actualizarReferenciasViajeros(Aduana *a, const Especie *baseEsp, const Planeta *basePla, const Objeto *baseObj) {
+
+void actualizarReferenciasViajeros(Aduana *a, const Especie *baseEsp, const Planeta *basePla, const Objeto *baseObj) {
     if (a == NULL || a->viajeros == NULL) {
         return;
     }
@@ -660,6 +699,7 @@ int registrarViajero(Aduana *a) {
     printf("Viajero registrado correctamente.\n");
     return 1;
 }
+
 Especie *buscarEspecie(Aduana *a, int id, const char *nombre) {
     if (a == NULL || a->especies == NULL) {
         return NULL;
@@ -1088,6 +1128,10 @@ int registrarIncidenteInterno(Aduana *a, Viajero *v, Objeto *obj, int motivo, De
     return 1;
 }
 
+int generarIncidente(Aduana *a, Viajero *v, Objeto *obj, int motivo, Decision dec) {
+    return registrarIncidenteInterno(a, v, obj, motivo, dec);
+}
+
 int objetoPermitido(const Aduana *a, const Objeto *obj, const Especie *esp) {
     if (a == NULL || obj == NULL) {
         return 0;
@@ -1105,6 +1149,7 @@ int objetoPermitido(const Aduana *a, const Objeto *obj, const Especie *esp) {
 
     return obj->idContrabando ? 0 : 1;
 }
+
 int detectarObjetosProhibidos(const Aduana *a, const Viajero *v, Objeto **prohibidos, int *cantProhibidos) {
     if (prohibidos == NULL || cantProhibidos == NULL) {
         return 0;
@@ -1141,44 +1186,7 @@ int detectarObjetosProhibidos(const Aduana *a, const Viajero *v, Objeto **prohib
     *cantProhibidos = encontrados;
     return encontrados;
 }
-int calcularRiesgo(const Aduana *a, const Viajero *v) {
-    if (a == NULL || v == NULL) {
-        return 0;
-    }
 
-    int puntaje = 0;
-
-    if (v->especie != NULL) {
-        puntaje += v->especie->nvPeligro;
-    }
-
-    if (v->planeta != NULL) {
-        puntaje += v->planeta->nvRiesgo;
-    }
-
-    if (v->equipaje != NULL && v->numObjetos > 0) {
-        Objeto **fin = v->equipaje + v->numObjetos;
-        for (Objeto **ptr = v->equipaje; ptr < fin; ptr++) {
-            if (*ptr != NULL) {
-                puntaje += (*ptr)->nvPeligro;
-                if ((*ptr)->idContrabando) {
-                    puntaje += 20;
-                }
-                if (!objetoPermitido(a, *ptr, v->especie)) {
-                    puntaje += 25;
-                }
-            }
-        }
-    }
-
-    puntaje += detectarConflictos(v);
-
-    if (puntaje < 0) {
-        puntaje = 0;
-    }
-
-    return puntaje;
-}
 int detectarConflictos(const Viajero *v) {
     if (v == NULL || v->equipaje == NULL || v->numObjetos < 2) {
         return 0;
@@ -1317,32 +1325,33 @@ int evaluarViajero(Aduana *a) {
 
     return 1;
 }
-int main(){
-Aduana unoAduana;
 
-    if(!crearAduana(&unoAduana, 2)){
+int main(void) {
+    Aduana unoAduana;
+
+    if (!crearAduana(&unoAduana, 2)) {
         printf("Error al crear aduana\n");
         return 1;
     }
 
-printf("=== ADUANA ===\n");
-printf("Especies: %d\n", unoAduana.capEspecies);
-printf("Planetas: %d\n", unoAduana.capPlanetas);
-printf("Objetos: %d\n", unoAduana.capObjetos);
-printf("Reglas: %d\n", unoAduana.capRegla);
-printf("Viajeros: %d\n", unoAduana.capViajeros);
-printf("Incidentes: %d\n", unoAduana.capIncidentes);
-printf("\n=== CONTADORES ===\n");
-printf("Especies registradas: %d\n", unoAduana.cantEspecies);
-printf("Planetas registrados: %d\n", unoAduana.cantPlanetas);
-printf("Objetos registrados: %d\n", unoAduana.cantObjetos);
-printf("Reglas registradas: %d\n", unoAduana.cantRegla);
-printf("Viajeros registrados: %d\n", unoAduana.cantViajeros);
-printf("Incidentes registrados: %d\n", unoAduana.cantIncidentes);
+    printf("=== ADUANA ===\n");
+    printf("Especies: %d\n", unoAduana.capEspecies);
+    printf("Planetas: %d\n", unoAduana.capPlanetas);
+    printf("Objetos: %d\n", unoAduana.capObjetos);
+    printf("Reglas: %d\n", unoAduana.capRegla);
+    printf("Viajeros: %d\n", unoAduana.capViajeros);
+    printf("Incidentes: %d\n", unoAduana.capIncidentes);
+    printf("\n=== CONTADORES ===\n");
+    printf("Especies registradas: %d\n", unoAduana.cantEspecies);
+    printf("Planetas registrados: %d\n", unoAduana.cantPlanetas);
+    printf("Objetos registrados: %d\n", unoAduana.cantObjetos);
+    printf("Reglas registradas: %d\n", unoAduana.cantRegla);
+    printf("Viajeros registrados: %d\n", unoAduana.cantViajeros);
+    printf("Incidentes registrados: %d\n", unoAduana.cantIncidentes);
     liberarAduana(&unoAduana);
-    Viajero *viajero = crearViajero(2);
 
-    if(viajero == NULL){
+    Viajero *viajero = crearViajero(2);
+    if (viajero == NULL) {
         printf("Error al crear viajero\n");
         return 1;
     }
@@ -1350,6 +1359,7 @@ printf("Incidentes registrados: %d\n", unoAduana.cantIncidentes);
     printf("Viajero creado correctamente\n");
     printf("Objetos: %d\n", viajero->numObjetos);
     printf("Capacidad: %d\n", viajero->capacidad);
+
     Objeto objeto1 = {"Laser", 1, 5, 100};
     Objeto objeto2 = {"Espada", 2, 3, 101};
     Objeto objeto3 = {"Escudo", 3, 2, 102};
@@ -1358,73 +1368,37 @@ printf("Incidentes registrados: %d\n", unoAduana.cantIncidentes);
     agregarObjetoEquipaje(viajero, &objeto2);
 
     printf("=== EQUIPAJE ===\n");
-
-    for(int i = 0; i < viajero->numObjetos; i++){
+    for (int i = 0; i < viajero->numObjetos; i++) {
         printf("%s\n", viajero->equipaje[i]->nombre);
     }
 
     printf("\nAgregando tercer objeto...\n");
-
-    if(agregarObjetoEquipaje(viajero, &objeto3)){
+    if (agregarObjetoEquipaje(viajero, &objeto3)) {
         printf("Objeto agregado correctamente\n");
     }
 
     printf("\n=== EQUIPAJE ACTUALIZADO ===\n");
-
-    for(int i = 0; i < viajero->numObjetos; i++){
+    for (int i = 0; i < viajero->numObjetos; i++) {
         printf("%s\n", viajero->equipaje[i]->nombre);
     }
 
     printf("\nObjetos: %d\n", viajero->numObjetos);
     printf("Capacidad: %d\n", viajero->capacidad);
-    printf("=== EQUIPAJE ORIGINAL ===\n");
 
-for(int i = 0; i < viajero->numObjetos; i++){
-    printf("%s\n", viajero->equipaje[i]->nombre);
-}
+    if (quitarObjetoEquipaje(viajero, 2)) {
+        printf("\nObjeto eliminado correctamente\n");
+    }
 
-if(quitarObjetoEquipaje(viajero, 2)){
-    printf("\nObjeto eliminado correctamente\n");
-}
+    printf("\n=== EQUIPAJE ACTUALIZADO ===\n");
+    for (int i = 0; i < viajero->numObjetos; i++) {
+        printf("%s\n", viajero->equipaje[i]->nombre);
+    }
 
-printf("\n=== EQUIPAJE ACTUALIZADO ===\n");
-
-for(int i = 0; i < viajero->numObjetos; i++){
-    printf("%s\n", viajero->equipaje[i]->nombre);
-}
-
-printf("\nObjetos: %d\n", viajero->numObjetos);
-printf("Capacidad: %d\n", viajero->capacidad);
+    printf("\nObjetos: %d\n", viajero->numObjetos);
+    printf("Capacidad: %d\n", viajero->capacidad);
 
     liberarViajero(viajero);
-
     printf("Memoria liberada correctamente\n");
 
-    Especie *buscarEspecie(Aduana *a, int id, const char *nombre);
-Planeta *buscarPlaneta(Aduana *a, int id, const char *nombre);
-Objeto *buscarObjeto(Aduana *a, int id, const char *nombre);
-Viajero *buscarViajero(Aduana *a, int id, const char *nombre);
-
-void listarEspecies(const Aduana *a);
-void listarPlanetas(const Aduana *a);
-void listarObjetos(const Aduana *a);
-void listarViajeros(const Aduana *a);
-
-int modificarEspecie(Aduana *a);
-int modificarObjeto(Aduana *a);
-int modificarViajero(Aduana *a);
-
-int eliminarEspecie(Aduana *a);
-int eliminarObjeto(Aduana *a);
-int eliminarViajero(Aduana *a);
-
-//7 hl
-int registrarIncidenteInterno(Aduana *a, Viajero *v, Objeto *obj, int motivo, Decision dec);
-int objetoPermitido(const Aduana *a, const Objeto *obj, const Especie *esp);
-int detectarObjetosProhibidos(const Aduana *a, const Viajero *v, Objeto **prohibidos, int *cantProhibidos);
-int calcularRiesgo(const Aduana *a, const Viajero *v);
-int detectarConflictos(const Viajero *v);
-Decision clasificarViajero(const Aduana *a, const Viajero *v, int puntaje);
-int evaluarViajero(Aduana *a);
-return 0;
+    return 0;
 }
