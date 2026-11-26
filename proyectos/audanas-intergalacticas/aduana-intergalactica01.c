@@ -98,56 +98,6 @@ typedef struct {
     int cantIncidentes;
     int capIncidentes;
 } Aduana;
-
-int crecerArreglo(void **arreglo, int *capacidad, size_t tamElemento);
-Viajero *crearViajero(int capacidadInicial);
-void liberarViajero(Viajero *v);
-int crearAduana(Aduana *j, int capInicial);
-void liberarAduana(Aduana *j);
-int agregarObjetoEquipaje(Viajero *v, Objeto *obj);
-int quitarObjetoEquipaje(Viajero *v, int idObjeto);
-
-void leerCadena(const char *mensaje, char *destino, int tam);
-int leerEntero(const char *mensaje, int min, int max);
-int validarNombre(const char *cadena);
-int existeId(const Aduana *a, char tipo, int id);
-int validarIdUnico(const Aduana *a, char tipo, int id);
-int confirmarAccion(const char *mensaje);
-
-void actualizarReferenciasViajeros(Aduana *a, const Especie *baseEsp, const Planeta *basePla, const Objeto *baseObj);
-int registrarEspecie(Aduana *a);
-int registrarPlaneta(Aduana *a);
-int registrarObjeto(Aduana *a);
-int registrarRegla(Aduana *a);
-int registrarViajero(Aduana *a);
-
-Especie *buscarEspecie(Aduana *a, int id, const char *nombre);
-Planeta *buscarPlaneta(Aduana *a, int id, const char *nombre);
-Objeto *buscarObjeto(Aduana *a, int id, const char *nombre);
-Viajero *buscarViajero(Aduana *a, int id, const char *nombre);
-
-void listarEspecies(const Aduana *a);
-void listarPlanetas(const Aduana *a);
-void listarObjetos(const Aduana *a);
-void listarViajeros(const Aduana *a);
-
-int modificarEspecie(Aduana *a);
-int modificarObjeto(Aduana *a);
-int modificarViajero(Aduana *a);
-
-int eliminarEspecie(Aduana *a);
-int eliminarObjeto(Aduana *a);
-int eliminarViajero(Aduana *a);
-
-int registrarIncidenteInterno(Aduana *a, Viajero *v, Objeto *obj, int motivo, Decision dec);
-int generarIncidente(Aduana *a, Viajero *v, Objeto *obj, int motivo, Decision dec);
-int objetoPermitido(const Aduana *a, const Objeto *obj, const Especie *esp);
-int detectarObjetosProhibidos(const Aduana *a, const Viajero *v, Objeto **prohibidos, int *cantProhibidos);
-int detectarConflictos(const Viajero *v);
-int calcularRiesgo(const Aduana *a, const Viajero *v);
-Decision clasificarViajero(const Aduana *a, const Viajero *v, int puntaje);
-int evaluarViajero(Aduana *a);
-
 int crecerArreglo(void **arreglo, int *capacidad, size_t tamElemento) {
     int nuevaCapacidad = (*capacidad) * 2;
     void *temporal = realloc(*arreglo, (size_t)nuevaCapacidad * tamElemento);
@@ -1130,6 +1080,161 @@ int registrarIncidenteInterno(Aduana *a, Viajero *v, Objeto *obj, int motivo, De
 
 int generarIncidente(Aduana *a, Viajero *v, Objeto *obj, int motivo, Decision dec) {
     return registrarIncidenteInterno(a, v, obj, motivo, dec);
+}
+
+void listarIncidentes(const Aduana *a) {
+    if (a == NULL || a->cantIncidentes == 0) {
+        printf("No hay incidentes registrados.\n");
+        return;
+    }
+
+    int filtroId = leerEntero("Filtrar por ID de viajero (0 para ver todos): ", 0, 100000);
+
+    printf("\n=== INCIDENTES ===\n");
+    int mostrados = 0;
+    for (int i = 0; i < a->cantIncidentes; i++) {
+        const Incidente *inc = &a->incidentes[i];
+        if (filtroId > 0 && (inc->viajero == NULL || inc->viajero->id != filtroId)) {
+            continue;
+        }
+
+        const char *nomViajero = (inc->viajero != NULL) ? inc->viajero->nombre : "Desconocido";
+        const char *nomObjeto = (inc->objeto != NULL) ? inc->objeto->nombre : "Ninguno";
+        printf("ID: %d | Viajero: %s | Objeto: %s | Motivo: %d | Decision: %s | Fecha: %d | Hora: %04d\n",
+               inc->id, nomViajero, nomObjeto, inc->motivo, inc->desicion, inc->fecha, inc->hora);
+        mostrados++;
+    }
+
+    if (mostrados == 0) {
+        printf("No hay incidentes para ese viajero.\n");
+    }
+}
+
+void reporteViajero(const Aduana *a) {
+    if (a == NULL || a->cantViajeros == 0) {
+        printf("No hay viajeros registrados.\n");
+        return;
+    }
+
+    int id = leerEntero("ID de viajero para reporte: ", 1, 100000);
+    Viajero *v = buscarViajero((Aduana *)a, id, NULL);
+    if (v == NULL) {
+        printf("Viajero no encontrado.\n");
+        return;
+    }
+
+    printf("\n=== REPORTE DE VIAJERO ===\n");
+    printf("ID: %d | Nombre: %s\n", v->id, v->nombre);
+    printf("Especie: %s\n", (v->especie != NULL) ? v->especie->nombre : "Sin especie");
+    printf("Planeta: %s\n", (v->planeta != NULL) ? v->planeta->nombre : "Sin planeta");
+    printf("Puntaje de riesgo: %d | Decision: %d\n", v->puntajeRiesgo, v->desicion);
+
+    printf("Equipaje (%d objetos):\n", v->numObjetos);
+    for (int i = 0; i < v->numObjetos; i++) {
+        if (v->equipaje[i] != NULL) {
+            printf("  - %s (ID %d, Peligro %d)\n",
+                   v->equipaje[i]->nombre, v->equipaje[i]->id, v->equipaje[i]->nvPeligro);
+        }
+    }
+
+    printf("Incidentes del viajero:\n");
+    int countInc = 0;
+    for (int i = 0; i < a->cantIncidentes; i++) {
+        if (a->incidentes[i].viajero != NULL && a->incidentes[i].viajero->id == v->id) {
+            printf("  - Incidente #%d: Motivo %d | Decision %s\n",
+                   a->incidentes[i].id, a->incidentes[i].motivo, a->incidentes[i].desicion);
+            countInc++;
+        }
+    }
+    if (countInc == 0) {
+        printf("  Sin incidentes registrados.\n");
+    }
+}
+
+void reporteGeneral(const Aduana *a) {
+    if (a == NULL) {
+        return;
+    }
+
+    int totAutorizados = 0;
+    int totRetenidos = 0;
+    int totRechazados = 0;
+
+    for (int i = 0; i < a->cantViajeros; i++) {
+        if (a->viajeros[i].desicion == AUTORIZADO) totAutorizados++;
+        else if (a->viajeros[i].desicion == RETENIDO) totRetenidos++;
+        else if (a->viajeros[i].desicion == RECHAZADO) totRechazados++;
+    }
+
+    printf("\n=== REPORTE GENERAL ===\n");
+    printf("Total viajeros: %d (Autorizados: %d | Retenidos: %d | Rechazados: %d)\n",
+           a->cantViajeros, totAutorizados, totRetenidos, totRechazados);
+    printf("Total incidentes: %d\n", a->cantIncidentes);
+
+    printf("\nIncidentes por especie:\n");
+    for (int i = 0; i < a->cantEspecies; i++) {
+        int cont = 0;
+        for (int j = 0; j < a->cantIncidentes; j++) {
+            if (a->incidentes[j].viajero != NULL &&
+                a->incidentes[j].viajero->especie != NULL &&
+                a->incidentes[j].viajero->especie->id == a->especies[i].id) {
+                cont++;
+            }
+        }
+        printf("  - %s: %d\n", a->especies[i].nombre, cont);
+    }
+
+    printf("\nObjetos detectados en incidentes:\n");
+    for (int i = 0; i < a->cantObjetos; i++) {
+        int cont = 0;
+        for (int j = 0; j < a->cantIncidentes; j++) {
+            if (a->incidentes[j].objeto != NULL &&
+                a->incidentes[j].objeto->id == a->objetos[i].id) {
+                cont++;
+            }
+        }
+        printf("  - %s: %d\n", a->objetos[i].nombre, cont);
+    }
+}
+
+int exportarReporte(const Aduana *a) {
+    if (a == NULL) {
+        return 0;
+    }
+
+    FILE *f = fopen("reporte_aduana.txt", "w");
+    if (f == NULL) {
+        printf("Error al crear reporte_aduana.txt.\n");
+        return 0;
+    }
+
+    fprintf(f, "=== REPORTE GENERAL DE ADUANA ===\n");
+    fprintf(f, "Especies: %d | Planetas: %d | Objetos: %d | Reglas: %d\n",
+            a->cantEspecies, a->cantPlanetas, a->cantObjetos, a->cantRegla);
+    fprintf(f, "Viajeros: %d | Incidentes: %d\n\n",
+            a->cantViajeros, a->cantIncidentes);
+
+    fprintf(f, "--- VIAJEROS ---\n");
+    for (int i = 0; i < a->cantViajeros; i++) {
+        const Viajero *v = &a->viajeros[i];
+        fprintf(f, "ID:%d | Nombre:%s | Riesgo:%d | Decision:%d | Objetos:%d\n",
+                v->id, v->nombre, v->puntajeRiesgo, v->desicion, v->numObjetos);
+    }
+
+    fprintf(f, "\n--- INCIDENTES ---\n");
+    for (int i = 0; i < a->cantIncidentes; i++) {
+        const Incidente *inc = &a->incidentes[i];
+        fprintf(f, "ID:%d | Viajero:%s | Objeto:%s | Motivo:%d | Decision:%s\n",
+                inc->id,
+                (inc->viajero != NULL) ? inc->viajero->nombre : "N/A",
+                (inc->objeto != NULL) ? inc->objeto->nombre : "N/A",
+                inc->motivo,
+                inc->desicion);
+    }
+
+    fclose(f);
+    printf("Reporte exportado a reporte_aduana.txt\n");
+    return 1;
 }
 
 int objetoPermitido(const Aduana *a, const Objeto *obj, const Especie *esp) {
