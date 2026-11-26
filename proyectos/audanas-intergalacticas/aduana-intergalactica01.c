@@ -1430,6 +1430,315 @@ int evaluarViajero(Aduana *a) {
 
     return 1;
 }
+int guardarEspecies(const Aduana *a) {
+    if (a == NULL) return 0;
+    FILE *f = fopen(ARCHIVO_ESPECIES, "w");
+    if (f == NULL) return 0;
+
+    for (int i = 0; i < a->cantEspecies; i++) {
+        fprintf(f, "%d|%s|%d\n",
+                a->especies[i].id,
+                a->especies[i].nombre,
+                a->especies[i].nvPeligro);
+    }
+    fclose(f);
+    return 1;
+}
+
+int guardarPlanetas(const Aduana *a) {
+    if (a == NULL) return 0;
+    FILE *f = fopen(ARCHIVO_PLANETAS, "w");
+    if (f == NULL) return 0;
+
+    for (int i = 0; i < a->cantPlanetas; i++) {
+        fprintf(f, "%d|%s|%d\n",
+                a->planetas[i].id,
+                a->planetas[i].nombre,
+                a->planetas[i].nvRiesgo);
+    }
+    fclose(f);
+    return 1;
+}
+
+int guardarObjetos(const Aduana *a) {
+    if (a == NULL) return 0;
+    FILE *f = fopen(ARCHIVO_OBJETOS, "w");
+    if (f == NULL) return 0;
+
+    for (int i = 0; i < a->cantObjetos; i++) {
+        fprintf(f, "%d|%s|%d|%d\n",
+                a->objetos[i].id,
+                a->objetos[i].nombre,
+                a->objetos[i].nvPeligro,
+                a->objetos[i].idContrabando);
+    }
+    fclose(f);
+    return 1;
+}
+
+int guardarReglas(const Aduana *a) {
+    if (a == NULL) return 0;
+    FILE *f = fopen(ARCHIVO_REGLAS, "w");
+    if (f == NULL) return 0;
+
+    for (int i = 0; i < a->cantRegla; i++) {
+        fprintf(f, "%d|%d|%d\n",
+                a->reglas[i].idObjeto,
+                a->reglas[i].idEspecie,
+                a->reglas[i].permitido);
+    }
+    fclose(f);
+    return 1;
+}
+
+int guardarViajeros(const Aduana *a) {
+    if (a == NULL) return 0;
+    FILE *f = fopen(ARCHIVO_VIAJEROS, "w");
+    if (f == NULL) return 0;
+
+    for (int i = 0; i < a->cantViajeros; i++) {
+        const Viajero *v = &a->viajeros[i];
+        int idEsp = (v->especie != NULL) ? v->especie->id : 0;
+        int idPla = (v->planeta != NULL) ? v->planeta->id : 0;
+
+        fprintf(f, "%d|%s|%d|%d|%d|%d|%d",
+                v->id, v->nombre, idEsp, idPla,
+                v->puntajeRiesgo, v->desicion, v->numObjetos);
+
+        for (int j = 0; j < v->numObjetos; j++) {
+            int idObj = (v->equipaje[j] != NULL) ? v->equipaje[j]->id : 0;
+            fprintf(f, "|%d", idObj);
+        }
+        fprintf(f, "\n");
+    }
+    fclose(f);
+    return 1;
+}
+
+int guardarIncidentes(const Aduana *a) {
+    if (a == NULL) return 0;
+    FILE *f = fopen(ARCHIVO_INCIDENTES, "w");
+    if (f == NULL) return 0;
+
+    for (int i = 0; i < a->cantIncidentes; i++) {
+        const Incidente *inc = &a->incidentes[i];
+        int idVia = (inc->viajero != NULL) ? inc->viajero->id : 0;
+        int idObj = (inc->objeto != NULL) ? inc->objeto->id : 0;
+
+        fprintf(f, "%d|%d|%d|%ld|%d|%d|%d|%s\n",
+                inc->id, idVia, idObj, (long)inc->fechaHora,
+                inc->fecha, inc->hora, inc->motivo, inc->desicion);
+    }
+    fclose(f);
+    return 1;
+}
+
+int cargarEspecies(Aduana *a) {
+    if (a == NULL) return 0;
+    FILE *f = fopen(ARCHIVO_ESPECIES, "r");
+    if (f == NULL) return 0;
+
+    char linea[256];
+    while (fgets(linea, sizeof(linea), f) != NULL) {
+        linea[strcspn(linea, "\n")] = '\0';
+        if (strlen(linea) == 0) continue;
+
+        Especie esp;
+        if (sscanf(linea, "%d|%49[^|]|%d", &esp.id, esp.nombre, &esp.nvPeligro) == 3) {
+            if (a->cantEspecies == a->capEspecies) {
+                if (!crecerArreglo((void **)&a->especies, &a->capEspecies, sizeof(Especie))) break;
+            }
+            a->especies[a->cantEspecies++] = esp;
+        }
+    }
+    fclose(f);
+    return 1;
+}
+
+int cargarPlanetas(Aduana *a) {
+    if (a == NULL) return 0;
+    FILE *f = fopen(ARCHIVO_PLANETAS, "r");
+    if (f == NULL) return 0;
+
+    char linea[256];
+    while (fgets(linea, sizeof(linea), f) != NULL) {
+        linea[strcspn(linea, "\n")] = '\0';
+        if (strlen(linea) == 0) continue;
+
+        Planeta pla;
+        if (sscanf(linea, "%d|%19[^|]|%d", &pla.id, pla.nombre, &pla.nvRiesgo) == 3) {
+            if (a->cantPlanetas == a->capPlanetas) {
+                if (!crecerArreglo((void **)&a->planetas, &a->capPlanetas, sizeof(Planeta))) break;
+            }
+            a->planetas[a->cantPlanetas++] = pla;
+        }
+    }
+    fclose(f);
+    return 1;
+}
+
+int cargarObjetos(Aduana *a) {
+    if (a == NULL) return 0;
+    FILE *f = fopen(ARCHIVO_OBJETOS, "r");
+    if (f == NULL) return 0;
+
+    char linea[256];
+    while (fgets(linea, sizeof(linea), f) != NULL) {
+        linea[strcspn(linea, "\n")] = '\0';
+        if (strlen(linea) == 0) continue;
+
+        Objeto obj;
+        if (sscanf(linea, "%d|%19[^|]|%d|%d", &obj.id, obj.nombre, &obj.nvPeligro, &obj.idContrabando) == 4) {
+            if (a->cantObjetos == a->capObjetos) {
+                if (!crecerArreglo((void **)&a->objetos, &a->capObjetos, sizeof(Objeto))) break;
+            }
+            a->objetos[a->cantObjetos++] = obj;
+        }
+    }
+    fclose(f);
+    return 1;
+}
+
+int cargarReglas(Aduana *a) {
+    if (a == NULL) return 0;
+    FILE *f = fopen(ARCHIVO_REGLAS, "r");
+    if (f == NULL) return 0;
+
+    char linea[256];
+    while (fgets(linea, sizeof(linea), f) != NULL) {
+        linea[strcspn(linea, "\n")] = '\0';
+        if (strlen(linea) == 0) continue;
+
+        Regla r;
+        if (sscanf(linea, "%d|%d|%d", &r.idObjeto, &r.idEspecie, &r.permitido) == 3) {
+            if (a->cantRegla == a->capRegla) {
+                if (!crecerArreglo((void **)&a->reglas, &a->capRegla, sizeof(Regla))) break;
+            }
+            a->reglas[a->cantRegla++] = r;
+        }
+    }
+    fclose(f);
+    return 1;
+}
+
+int cargarViajeros(Aduana *a) {
+    if (a == NULL) return 0;
+    FILE *f = fopen(ARCHIVO_VIAJEROS, "r");
+    if (f == NULL) return 0;
+
+    char linea[512];
+    while (fgets(linea, sizeof(linea), f) != NULL) {
+        linea[strcspn(linea, "\n")] = '\0';
+        if (strlen(linea) == 0) continue;
+
+        int id = 0, idEsp = 0, idPla = 0, riesgo = 0, decision = 0, cantObj = 0;
+        char nombre[30];
+
+        char *token = strtok(linea, "|");
+        if (!token) continue;
+        id = atoi(token);
+
+        token = strtok(NULL, "|");
+        if (!token) continue;
+        strncpy(nombre, token, sizeof(nombre) - 1);
+        nombre[sizeof(nombre) - 1] = '\0';
+
+        token = strtok(NULL, "|"); if (!token) continue; idEsp = atoi(token);
+        token = strtok(NULL, "|"); if (!token) continue; idPla = atoi(token);
+        token = strtok(NULL, "|"); if (!token) continue; riesgo = atoi(token);
+        token = strtok(NULL, "|"); if (!token) continue; decision = atoi(token);
+        token = strtok(NULL, "|"); if (!token) continue; cantObj = atoi(token);
+
+        Viajero *vTemp = crearViajero(cantObj > 2 ? cantObj : 2);
+        if (vTemp == NULL) continue;
+
+        vTemp->id = id;
+        strcpy(vTemp->nombre, nombre);
+        vTemp->especie = buscarEspecie(a, idEsp, NULL);
+        vTemp->planeta = buscarPlaneta(a, idPla, NULL);
+        vTemp->puntajeRiesgo = riesgo;
+        vTemp->desicion = decision;
+
+        for (int i = 0; i < cantObj; i++) {
+            token = strtok(NULL, "|");
+            if (token != NULL) {
+                int idObj = atoi(token);
+                Objeto *obj = buscarObjeto(a, idObj, NULL);
+                if (obj != NULL) {
+                    agregarObjetoEquipaje(vTemp, obj);
+                }
+            }
+        }
+
+        if (a->cantViajeros == a->capViajeros) {
+            if (!crecerArreglo((void **)&a->viajeros, &a->capViajeros, sizeof(Viajero))) {
+                liberarViajero(vTemp);
+                break;
+            }
+        }
+        a->viajeros[a->cantViajeros++] = *vTemp;
+        free(vTemp);
+    }
+    fclose(f);
+    return 1;
+}
+
+int cargarIncidentes(Aduana *a) {
+    if (a == NULL) return 0;
+    FILE *f = fopen(ARCHIVO_INCIDENTES, "r");
+    if (f == NULL) return 0;
+
+    char linea[256];
+    while (fgets(linea, sizeof(linea), f) != NULL) {
+        linea[strcspn(linea, "\n")] = '\0';
+        if (strlen(linea) == 0) continue;
+
+        int id = 0, idVia = 0, idObj = 0, fecha = 0, hora = 0, motivo = 0;
+        long ts = 0;
+        char dec[50];
+
+        if (sscanf(linea, "%d|%d|%d|%ld|%d|%d|%d|%49[^\n]",
+                   &id, &idVia, &idObj, &ts, &fecha, &hora, &motivo, dec) == 8) {
+            Incidente inc;
+            inc.id = id;
+            inc.viajero = buscarViajero(a, idVia, NULL);
+            inc.objeto = buscarObjeto(a, idObj, NULL);
+            inc.fechaHora = (time_t)ts;
+            inc.fecha = fecha;
+            inc.hora = hora;
+            inc.motivo = motivo;
+            strcpy(inc.desicion, dec);
+
+            if (a->cantIncidentes == a->capIncidentes) {
+                if (!crecerArreglo((void **)&a->incidentes, &a->capIncidentes, sizeof(Incidente))) break;
+            }
+            a->incidentes[a->cantIncidentes++] = inc;
+        }
+    }
+    fclose(f);
+    return 1;
+}
+
+void guardarTodo(const Aduana *a) {
+    if (a == NULL) return;
+    guardarEspecies(a);
+    guardarPlanetas(a);
+    guardarObjetos(a);
+    guardarReglas(a);
+    guardarViajeros(a);
+    guardarIncidentes(a);
+    printf("Datos guardados en archivos .txt\n");
+}
+
+void cargarTodo(Aduana *a) {
+    if (a == NULL) return;
+    cargarEspecies(a);
+    cargarPlanetas(a);
+    cargarObjetos(a);
+    cargarReglas(a);
+    cargarViajeros(a);
+    cargarIncidentes(a);
+}
 
 int main(void) {
     Aduana unoAduana;
