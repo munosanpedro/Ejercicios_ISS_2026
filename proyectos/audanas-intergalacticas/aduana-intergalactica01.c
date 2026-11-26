@@ -1,6 +1,32 @@
-#include<stdio.h>
-#include<stdlib.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#define MAX_NOMBRE 50
+#define MAX_NOMBRE_CORTO 20
 
+#define UMBRAL_RETENIDO 40
+#define UMBRAL_RECHAZADO 75
+
+#define ARCHIVO_ESPECIES   "especies.txt"
+#define ARCHIVO_PLANETAS   "planetas.txt"
+#define ARCHIVO_OBJETOS    "objetos.txt"
+#define ARCHIVO_REGLAS     "reglas.txt"
+#define ARCHIVO_VIAJEROS   "viajeros.txt"
+#define ARCHIVO_INCIDENTES "incidentes.txt"
+typedef enum {
+    AUTORIZADO = 0,
+    RETENIDO   = 1,
+    RECHAZADO  = 2
+} Decision;
+
+typedef enum {
+    MOTIVO_NINGUNO = 0,
+    MOTIVO_OBJETO_PROHIBIDO,
+    MOTIVO_CONTRABANDO,
+    MOTIVO_CONFLICTO_EQUIPAJE,
+    MOTIVO_RIESGO_ALTO
+} MotivoIncidente;
 typedef struct{
     char nombre[50];
     int id;
@@ -21,10 +47,10 @@ typedef struct{
 typedef struct{
 int idObjeto;
 int idEspecie;
-int Permitido;
+int permitido;
 } Regla;
 typedef struct{
-char mombre[30];
+char nombre[30];
 int id;
 Especie *especie;
 Planeta *planeta;
@@ -236,6 +262,400 @@ int quitarObjetoEquipaje(Viajero *v, int idObjeto){
         }
     }
 
+    return 1;
+}
+void leerCadena(const char *mensaje, char *destino, int tam) {
+    if (destino == NULL || tam <= 0) {
+        return;
+    }
+
+    do {
+        printf("%s", mensaje);
+        if (fgets(destino, tam, stdin) == NULL) {
+            destino[0] = '\0';
+            return;
+        }
+        destino[strcspn(destino, "\n")] = '\0';
+
+        if (strlen(destino) == 0) {
+            printf("El texto no puede estar vacio.\n");
+        }
+    } while (strlen(destino) == 0);
+}
+
+int leerEntero(const char *mensaje, int min, int max) {
+    int valor = 0;
+    int ok = 0;
+
+    do {
+        printf("%s", mensaje);
+        if (scanf("%d", &valor) != 1) {
+            printf("Entrada invalida. Ingrese un numero.\n");
+            while (getchar() != '\n');
+        } else {
+            while (getchar() != '\n');
+            if (valor < min || valor > max) {
+                printf("El valor debe estar entre %d y %d.\n", min, max);
+            } else {
+                ok = 1;
+            }
+        }
+    } while (!ok);
+
+    return valor;
+}
+
+int validarNombre(const char *cadena) {
+    if (cadena == NULL) {
+        return 0;
+    }
+    int len = (int)strlen(cadena);
+    if (len < 2 || len >= MAX_NOMBRE) {
+        return 0;
+    }
+    return 1;
+}
+
+int existeId(const Aduana *a, char tipo, int id) {
+    if (a == NULL) {
+        return 0;
+    }
+
+    if (tipo == 'E') {
+        for (int i = 0; i < a->cantEspecies; i++) {
+            if (a->especies[i].id == id) return 1;
+        }
+    } else if (tipo == 'P') {
+        for (int i = 0; i < a->cantPlanetas; i++) {
+            if (a->planetas[i].id == id) return 1;
+        }
+    } else if (tipo == 'O') {
+        for (int i = 0; i < a->cantObjetos; i++) {
+            if (a->objetos[i].id == id) return 1;
+        }
+    } else if (tipo == 'V') {
+        for (int i = 0; i < a->cantViajeros; i++) {
+            if (a->viajeros[i].id == id) return 1;
+        }
+    } else if (tipo == 'I') {
+        for (int i = 0; i < a->cantIncidentes; i++) {
+            if (a->incidentes[i].id == id) return 1;
+        }
+    }
+
+    return 0;
+}
+
+int validarIdUnico(const Aduana *a, char tipo, int id) {
+    if (id <= 0) {
+        return 0;
+    }
+    return !existeId(a, tipo, id);
+}
+
+int confirmarAccion(const char *mensaje) {
+    char resp[10];
+    printf("%s (s/n): ", mensaje);
+    scanf("%9s", resp);
+    while (getchar() != '\n');
+
+    if (resp[0] == 's' || resp[0] == 'S') {
+        return 1;
+    }
+    return 0;
+}
+void actualizarReferenciasViajeros(Aduana *a, const Especie *baseEsp, const Planeta *basePla, const Objeto *baseObj);
+int registrarEspecie(Aduana *a);
+int registrarPlaneta(Aduana *a);
+int registrarObjeto(Aduana *a);
+int registrarRegla(Aduana *a);
+int registrarViajero(Aduana *a);void actualizarReferenciasViajeros(Aduana *a, const Especie *baseEsp, const Planeta *basePla, const Objeto *baseObj) {
+    if (a == NULL || a->viajeros == NULL) {
+        return;
+    }
+
+    for (int i = 0; i < a->cantViajeros; i++) {
+        Viajero *v = &a->viajeros[i];
+
+        if (v->especie != NULL && baseEsp != NULL && a->especies != NULL) {
+            int idx = (int)(v->especie - baseEsp);
+            if (idx >= 0 && idx < a->cantEspecies) {
+                v->especie = &a->especies[idx];
+            }
+        }
+
+        if (v->planeta != NULL && basePla != NULL && a->planetas != NULL) {
+            int idx = (int)(v->planeta - basePla);
+            if (idx >= 0 && idx < a->cantPlanetas) {
+                v->planeta = &a->planetas[idx];
+            }
+        }
+
+        if (v->equipaje != NULL && baseObj != NULL && a->objetos != NULL) {
+            for (int j = 0; j < v->numObjetos; j++) {
+                if (v->equipaje[j] != NULL) {
+                    int idx = (int)(v->equipaje[j] - baseObj);
+                    if (idx >= 0 && idx < a->cantObjetos) {
+                        v->equipaje[j] = &a->objetos[idx];
+                    }
+                }
+            }
+        }
+    }
+}
+
+int registrarEspecie(Aduana *a) {
+    if (a == NULL) {
+        return 0;
+    }
+
+    Especie *anterior = a->especies;
+    if (a->cantEspecies == a->capEspecies) {
+        if (!crecerArreglo((void **)&a->especies, &a->capEspecies, sizeof(Especie))) {
+            printf("Error: no se pudo ampliar memoria para especies.\n");
+            return 0;
+        }
+        actualizarReferenciasViajeros(a, anterior, NULL, NULL);
+    }
+
+    Especie nueva;
+    do {
+        nueva.id = leerEntero("ID de especie: ", 1, 100000);
+        if (!validarIdUnico(a, 'E', nueva.id)) {
+            printf("Ese ID de especie ya existe o no es valido.\n");
+        }
+    } while (!validarIdUnico(a, 'E', nueva.id));
+
+    do {
+        leerCadena("Nombre de especie: ", nueva.nombre, MAX_NOMBRE);
+        if (!validarNombre(nueva.nombre)) {
+            printf("Nombre invalido.\n");
+        }
+    } while (!validarNombre(nueva.nombre));
+
+    nueva.nvPeligro = leerEntero("Nivel de peligro base (0-100): ", 0, 100);
+
+    a->especies[a->cantEspecies] = nueva;
+    a->cantEspecies++;
+    printf("Especie registrada.\n");
+    return 1;
+}
+
+int registrarPlaneta(Aduana *a) {
+    if (a == NULL) {
+        return 0;
+    }
+
+    Planeta *anterior = a->planetas;
+    if (a->cantPlanetas == a->capPlanetas) {
+        if (!crecerArreglo((void **)&a->planetas, &a->capPlanetas, sizeof(Planeta))) {
+            printf("Error: no se pudo ampliar memoria para planetas.\n");
+            return 0;
+        }
+        actualizarReferenciasViajeros(a, NULL, anterior, NULL);
+    }
+
+    Planeta nuevo;
+    do {
+        nuevo.id = leerEntero("ID de planeta: ", 1, 100000);
+        if (!validarIdUnico(a, 'P', nuevo.id)) {
+            printf("Ese ID de planeta ya existe o no es valido.\n");
+        }
+    } while (!validarIdUnico(a, 'P', nuevo.id));
+
+    do {
+        leerCadena("Nombre de planeta: ", nuevo.nombre, MAX_NOMBRE_CORTO);
+        if (!validarNombre(nuevo.nombre)) {
+            printf("Nombre invalido.\n");
+        }
+    } while (!validarNombre(nuevo.nombre));
+
+    nuevo.nvRiesgo = leerEntero("Nivel de riesgo del planeta (0-100): ", 0, 100);
+
+    a->planetas[a->cantPlanetas] = nuevo;
+    a->cantPlanetas++;
+    printf("Planeta registrado.\n");
+    return 1;
+}
+
+int registrarObjeto(Aduana *a) {
+    if (a == NULL) {
+        return 0;
+    }
+
+    Objeto *anterior = a->objetos;
+    if (a->cantObjetos == a->capObjetos) {
+        if (!crecerArreglo((void **)&a->objetos, &a->capObjetos, sizeof(Objeto))) {
+            printf("Error: no se pudo ampliar memoria para objetos.\n");
+            return 0;
+        }
+        actualizarReferenciasViajeros(a, NULL, NULL, anterior);
+    }
+
+    Objeto nuevo;
+    do {
+        nuevo.id = leerEntero("ID de objeto: ", 1, 100000);
+        if (!validarIdUnico(a, 'O', nuevo.id)) {
+            printf("Ese ID de objeto ya existe o no es valido.\n");
+        }
+    } while (!validarIdUnico(a, 'O', nuevo.id));
+
+    do {
+        leerCadena("Nombre de objeto: ", nuevo.nombre, MAX_NOMBRE_CORTO);
+        if (!validarNombre(nuevo.nombre)) {
+            printf("Nombre invalido.\n");
+        }
+    } while (!validarNombre(nuevo.nombre));
+
+    nuevo.nvPeligro = leerEntero("Nivel de peligro del objeto (0-100): ", 0, 100);
+    nuevo.idContrabando = leerEntero("Es contrabando? (1 = Si, 0 = No): ", 0, 1);
+
+    a->objetos[a->cantObjetos] = nuevo;
+    a->cantObjetos++;
+    printf("Objeto registrado.\n");
+    return 1;
+}
+
+int registrarRegla(Aduana *a) {
+    if (a == NULL) {
+        return 0;
+    }
+
+    if (a->cantObjetos == 0 || a->cantEspecies == 0) {
+        printf("Debe registrar al menos un objeto y una especie antes de crear reglas.\n");
+        return 0;
+    }
+
+    if (a->cantRegla == a->capRegla) {
+        if (!crecerArreglo((void **)&a->reglas, &a->capRegla, sizeof(Regla))) {
+            printf("Error: no se pudo ampliar memoria para reglas.\n");
+            return 0;
+        }
+    }
+
+    Regla nueva;
+    do {
+        nueva.idObjeto = leerEntero("ID de objeto para la regla: ", 1, 100000);
+        if (!existeId(a, 'O', nueva.idObjeto)) {
+            printf("No existe un objeto con ese ID.\n");
+        }
+    } while (!existeId(a, 'O', nueva.idObjeto));
+
+    do {
+        nueva.idEspecie = leerEntero("ID de especie para la regla: ", 1, 100000);
+        if (!existeId(a, 'E', nueva.idEspecie)) {
+            printf("No existe una especie con ese ID.\n");
+        }
+    } while (!existeId(a, 'E', nueva.idEspecie));
+
+    nueva.permitido = leerEntero("Permitido para esta especie? (1 = Si, 0 = No): ", 0, 1);
+
+    a->reglas[a->cantRegla] = nueva;
+    a->cantRegla++;
+    printf("Regla registrada.\n");
+    return 1;
+}
+
+int registrarViajero(Aduana *a) {
+    if (a == NULL) {
+        return 0;
+    }
+
+    if (a->cantEspecies == 0 || a->cantPlanetas == 0) {
+        printf("Debe registrar al menos una especie y un planeta antes de registrar viajeros.\n");
+        return 0;
+    }
+
+    Especie *antEsp = a->especies;
+    Planeta *antPla = a->planetas;
+    Objeto *antObj = a->objetos;
+
+    if (a->cantViajeros == a->capViajeros) {
+        if (!crecerArreglo((void **)&a->viajeros, &a->capViajeros, sizeof(Viajero))) {
+            printf("Error: no se pudo ampliar memoria para viajeros.\n");
+            return 0;
+        }
+        actualizarReferenciasViajeros(a, antEsp, antPla, antObj);
+    }
+
+    Viajero *temporal = crearViajero(2);
+    if (temporal == NULL) {
+        printf("Error al reservar memoria para el viajero.\n");
+        return 0;
+    }
+
+    do {
+        temporal->id = leerEntero("ID de viajero: ", 1, 100000);
+        if (!validarIdUnico(a, 'V', temporal->id)) {
+            printf("Ese ID de viajero ya existe o no es valido.\n");
+        }
+    } while (!validarIdUnico(a, 'V', temporal->id));
+
+    do {
+        leerCadena("Nombre del viajero: ", temporal->nombre, sizeof(temporal->nombre));
+        if (!validarNombre(temporal->nombre)) {
+            printf("Nombre invalido.\n");
+        }
+    } while (!validarNombre(temporal->nombre));
+
+    int idEsp = 0;
+    do {
+        idEsp = leerEntero("ID de especie del viajero: ", 1, 100000);
+        if (!existeId(a, 'E', idEsp)) {
+            printf("Especie no encontrada.\n");
+        }
+    } while (!existeId(a, 'E', idEsp));
+
+    for (int i = 0; i < a->cantEspecies; i++) {
+        if (a->especies[i].id == idEsp) {
+            temporal->especie = &a->especies[i];
+            break;
+        }
+    }
+
+    int idPla = 0;
+    do {
+        idPla = leerEntero("ID de planeta de origen: ", 1, 100000);
+        if (!existeId(a, 'P', idPla)) {
+            printf("Planeta no encontrado.\n");
+        }
+    } while (!existeId(a, 'P', idPla));
+
+    for (int i = 0; i < a->cantPlanetas; i++) {
+        if (a->planetas[i].id == idPla) {
+            temporal->planeta = &a->planetas[i];
+            break;
+        }
+    }
+
+    if (a->cantObjetos > 0) {
+        int cantObj = leerEntero("Cuantos objetos lleva en su equipaje?: ", 0, 100);
+        for (int i = 0; i < cantObj; i++) {
+            int idObj = leerEntero("ID del objeto a agregar: ", 1, 100000);
+            Objeto *encontrado = NULL;
+
+            for (int j = 0; j < a->cantObjetos; j++) {
+                if (a->objetos[j].id == idObj) {
+                    encontrado = &a->objetos[j];
+                    break;
+                }
+            }
+
+            if (encontrado == NULL) {
+                printf("Objeto no encontrado, se omite.\n");
+            } else if (!agregarObjetoEquipaje(temporal, encontrado)) {
+                printf("No se pudo agregar el objeto al equipaje.\n");
+            }
+        }
+    } else {
+        printf("No hay objetos registrados en el catalogo; el equipaje queda vacio.\n");
+    }
+
+    a->viajeros[a->cantViajeros] = *temporal;
+    a->cantViajeros++;
+    free(temporal);
+
+    printf("Viajero registrado correctamente.\n");
     return 1;
 }
 int main(){
